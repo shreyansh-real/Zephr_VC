@@ -13,7 +13,7 @@ export default function CommitteePage() {
           <h1 className="font-display font-black text-[28px] leading-[1.15] tracking-[-0.01em] mb-2 text-[var(--ink)]">
             Committee only
           </h1>
-          <p className="text-[15px] text-[var(--muted)] mb-6">Enter your passcode to access the dashboard.</p>
+          <p className="text-[15px] text-[var(--muted-foreground)] mb-6">Enter your passcode to access the dashboard.</p>
           <LoginForm />
         </div>
       </main>

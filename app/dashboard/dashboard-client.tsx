@@ -149,7 +149,7 @@ export function DashboardClient() {
 
         {/* Stats */}
         {stats && (
-          <p className="text-[16px] text-[var(--muted)] mb-4" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <p className="text-[16px] text-[var(--muted-foreground)] mb-4" style={{ fontVariantNumeric: "tabular-nums" }}>
             <strong className="text-[var(--ink)]">{stats.open_count}</strong> open
             {" · "}
             <strong className="text-[var(--critical)]">{stats.critical_count}</strong> critical
@@ -195,7 +195,7 @@ export function DashboardClient() {
             <option value="">All statuses</option>
             {allStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-[15px] text-[var(--muted)] cursor-pointer ml-auto">
+          <label className="flex items-center gap-2 text-[15px] text-[var(--muted-foreground)] cursor-pointer ml-auto">
             <input
               type="checkbox"
               checked={showResolved}
@@ -234,7 +234,7 @@ export function DashboardClient() {
 
           {!loading && !error && clusters.length === 0 && (
             <div className="p-6 rounded-[12px] border border-[var(--border-token)]" style={{ backgroundColor: "var(--surface)" }}>
-              <p className="text-[16px] text-[var(--muted)]">No complaints yet. Share the report link with residents.</p>
+              <p className="text-[16px] text-[var(--muted-foreground)]">No complaints yet. Share the report link with residents.</p>
               <button
                 onClick={() => { navigator.clipboard.writeText(window.location.origin + "/report").catch(() => {}); }}
                 className="mt-3 h-10 px-5 rounded-lg font-bold text-[15px] border-[1.5px] border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"

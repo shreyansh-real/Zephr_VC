@@ -73,7 +73,7 @@ export function ReportForm() {
         </p>
         <div className="flex items-center gap-2 mb-8">
           <UrgencyChip level={success.urgency as UrgencyLevel} />
-          <span className="text-[15px] text-[var(--muted)]">{success.summary}</span>
+          <span className="text-[15px] text-[var(--muted-foreground)]">{success.summary}</span>
         </div>
         <button
           onClick={() => { setSuccess(null); setFlatNo(""); setName(""); setText(""); }}
@@ -99,7 +99,7 @@ export function ReportForm() {
           placeholder="B-204"
           disabled={loading}
           aria-describedby={fieldErrors.flat_no ? "flat_no_err" : undefined}
-          className="h-[52px] px-4 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[16px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50 font-variant-numeric tabular-nums"
+          className="h-[52px] px-4 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[16px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50 font-variant-numeric tabular-nums"
           style={{ fontVariantNumeric: "tabular-nums" }}
           autoComplete="off"
         />
@@ -122,7 +122,7 @@ export function ReportForm() {
           placeholder="Ramesh Kumar"
           disabled={loading}
           aria-describedby={fieldErrors.resident_name ? "name_err" : undefined}
-          className="h-[52px] px-4 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[16px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50"
+          className="h-[52px] px-4 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[16px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50"
           autoComplete="name"
         />
         {fieldErrors.resident_name && (
@@ -145,10 +145,10 @@ export function ReportForm() {
           rows={5}
           maxLength={1000}
           aria-describedby={fieldErrors.raw_text ? "text_err" : "text_hint"}
-          className="min-h-[140px] px-4 py-3 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[18px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50 resize-y"
+          className="min-h-[140px] px-4 py-3 rounded-lg bg-[var(--surface)] border-[1.5px] border-[var(--border-token)] text-[18px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 disabled:opacity-50 resize-y"
           style={{ lineHeight: 1.55 }}
         />
-        <p id="text_hint" className="text-[15px] text-[var(--muted)]">
+        <p id="text_hint" className="text-[15px] text-[var(--muted-foreground)]">
           Write in English, Hindi or Hinglish. ({text.length}/1000)
         </p>
         {fieldErrors.raw_text && (

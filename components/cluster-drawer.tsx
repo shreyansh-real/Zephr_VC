@@ -216,7 +216,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
               <div className="flex flex-wrap gap-2">
                 <UrgencyChip level={cluster.urgency as UrgencyLevel} />
                 <CategoryChip category={cluster.category as CategoryType} />
-                <span className="text-[15px] text-[var(--muted)] self-center">{cluster.complaint_count} reports</span>
+                <span className="text-[15px] text-[var(--muted-foreground)] self-center">{cluster.complaint_count} reports</span>
                 {cluster.needs_review && (
                   <span className="inline-flex items-center gap-1 text-[14px] font-bold self-center" style={{ color: "var(--review)" }}>
                     <Eye size={14} /> Check this: AI is unsure
@@ -238,7 +238,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                           ? s === "Resolved"
                             ? "bg-[var(--resolved)] border-[var(--resolved)] text-white"
                             : "bg-[var(--ink)] border-[var(--ink)] text-[var(--ink-inverse)]"
-                          : "bg-transparent border-[var(--border-token)] text-[var(--muted)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
+                          : "bg-transparent border-[var(--border-token)] text-[var(--muted-foreground)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
                       } disabled:cursor-default`}
                     >
                       {cluster.status === s && <Check size={14} className="inline mr-1" />}
@@ -266,10 +266,10 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
               {complaints[0] && (
                 <div>
                   <p className="text-[15px] font-bold text-[var(--ink)] mb-2">Why {cluster.urgency}</p>
-                  <p className="text-[15px] text-[var(--muted)] mb-3">{complaints[0].reason}</p>
+                  <p className="text-[15px] text-[var(--muted-foreground)] mb-3">{complaints[0].reason}</p>
                   {avgConfidence !== null && (
                     <div>
-                      <p className="text-[15px] text-[var(--muted)] mb-1">{Math.round(avgConfidence * 100)}% sure</p>
+                      <p className="text-[15px] text-[var(--muted-foreground)] mb-1">{Math.round(avgConfidence * 100)}% sure</p>
                       <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
                         <div
                           className="h-full bg-[var(--ink)] rounded-full"
@@ -307,12 +307,12 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[15px] font-bold text-[var(--ink)]">{c.flat_no} — {c.resident_name}</span>
-                        <span className="text-[14px] text-[var(--muted)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        <span className="text-[14px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
                           {formatTs(c.created_at)}
                         </span>
                       </div>
                       <p className="text-[16px] text-[var(--ink)] mb-2" style={{ lineHeight: 1.6 }}>{c.raw_text}</p>
-                      <p className="text-[14px] text-[var(--muted)] italic">{c.summary}</p>
+                      <p className="text-[14px] text-[var(--muted-foreground)] italic">{c.summary}</p>
                       {c.reply_sent_at && (
                         <p className="text-[14px] font-bold mt-2" style={{ color: "var(--resolved)" }}>
                           <Check size={14} className="inline mr-1" />Reply sent {formatTs(c.reply_sent_at)}
@@ -328,7 +328,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                 <p className="text-[15px] font-bold text-[var(--ink)] mb-3">
                   Reply to residents
                   {draftLanguage && (
-                    <span className="ml-2 px-2 py-0.5 rounded-[4px] bg-[var(--surface-2)] text-[14px] text-[var(--muted)] border border-[var(--border-token)] font-normal">
+                    <span className="ml-2 px-2 py-0.5 rounded-[4px] bg-[var(--surface-2)] text-[14px] text-[var(--muted-foreground)] border border-[var(--border-token)] font-normal">
                       {draftLanguage}
                     </span>
                   )}

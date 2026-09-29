@@ -132,7 +132,7 @@ export function ClusterCard({ cluster, variant, onClick, onUpdate, hasCountedRef
         {/* Count */}
         <div className="flex flex-col items-center justify-start min-w-[72px] flex-shrink-0">
           <CountNumeral count={cluster.complaint_count} variant={variant} hasCountedRef={hasCountedRef} />
-          <span className="text-[15px] font-bold text-[var(--muted)] mt-0.5">
+          <span className="text-[15px] font-bold text-[var(--muted-foreground)] mt-0.5">
             {cluster.complaint_count === 1 ? "report" : "reports"}
           </span>
         </div>
@@ -156,7 +156,7 @@ export function ClusterCard({ cluster, variant, onClick, onUpdate, hasCountedRef
             )}
           </div>
 
-          <div className="text-[15px] text-[var(--muted)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <div className="text-[15px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
             {shownFlats.join(", ")}
             {extraFlats > 0 && ` +${extraFlats}`}
             {" · "}
@@ -166,7 +166,7 @@ export function ClusterCard({ cluster, variant, onClick, onUpdate, hasCountedRef
 
           {/* Controls */}
           <div className="flex flex-wrap gap-2 items-center mt-1" onClick={(e) => e.stopPropagation()}>
-            <span className="text-[15px] font-bold text-[var(--muted)]">{cluster.status}</span>
+            <span className="text-[15px] font-bold text-[var(--muted-foreground)]">{cluster.status}</span>
             {cluster.status !== "Resolved" && (
               <>
                 {(cluster.status === "New" || cluster.status === "Assigned") && (

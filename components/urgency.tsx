@@ -65,7 +65,7 @@ export function CategoryChip({ category, className = "" }: CategoryChipProps) {
   const icon = CATEGORY_ICONS[category as CategoryType] ?? <HelpCircle size={16} />;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] border border-[var(--border-token)] bg-[var(--surface-2)] text-[var(--muted)] text-[14px] font-bold leading-none h-7 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] border border-[var(--border-token)] bg-[var(--surface-2)] text-[var(--ink)] text-[14px] font-bold leading-none h-7 ${className}`}
     >
       {icon}
       {category}
