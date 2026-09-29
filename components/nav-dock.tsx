@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
 import {
   Home,
   FileText,
@@ -29,10 +30,76 @@ interface NavDockProps {
 
 const NAV_ITEMS = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/report", icon: FileText, label: "Report a Problem" },
-  { href: "/committee", icon: ShieldCheck, label: "Committee Login" },
+  { href: "/report", icon: FileText, label: "Report Problem" },
+  { href: "/committee", icon: ShieldCheck, label: "Committee" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
 ];
+
+// Shared hover bg wrapper using framer-motion for smooth bg fade
+function DockButton({
+  children,
+  className,
+  active,
+  danger,
+  ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  active?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <motion.button
+      {...(rest as React.ComponentProps<typeof motion.button>)}
+      className={cn(
+        "flex items-center justify-center w-full h-full rounded-full relative overflow-hidden",
+        "transition-colors duration-200 outline-none",
+        active
+          ? "bg-[var(--ink)] text-[var(--ink-inverse)]"
+          : danger
+          ? "text-[var(--muted-foreground)] hover:text-[var(--critical)]"
+          : "text-[var(--muted-foreground)] hover:text-[var(--ink)]",
+        className
+      )}
+      whileTap={{ scale: 0.9 }}
+      transition={{ type: "spring", mass: 0.1, stiffness: 300, damping: 20 }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+function DockLink({
+  href,
+  active,
+  children,
+  label,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <motion.div
+      className="w-full h-full"
+      whileTap={{ scale: 0.88 }}
+      transition={{ type: "spring", mass: 0.1, stiffness: 300, damping: 20 }}
+    >
+      <Link
+        href={href}
+        aria-label={label}
+        className={cn(
+          "flex items-center justify-center w-full h-full rounded-full",
+          "transition-colors duration-200 outline-none",
+          active
+            ? "bg-[var(--ink)] text-[var(--ink-inverse)]"
+            : "text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
+        )}
+      >
+        {children}
+      </Link>
+    </motion.div>
+  );
+}
 
 function ThemeDockItem() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -41,20 +108,23 @@ function ThemeDockItem() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
+        <DockButton
           onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           suppressHydrationWarning
-          className={cn(
-            "flex items-center justify-center w-full h-full rounded-full",
-            "text-[var(--muted-foreground)] hover:text-[var(--ink)]",
-            "hover:bg-[var(--surface-2)] transition-colors"
-          )}
         >
-          <span suppressHydrationWarning>
-            {isDark ? <Moon size={20} /> : <Sun size={20} />}
-          </span>
-        </button>
+          <motion.span
+            suppressHydrationWarning
+            key={isDark ? "moon" : "sun"}
+            initial={{ rotate: -30, opacity: 0, scale: 0.7 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: 30, opacity: 0, scale: 0.7 }}
+            transition={{ type: "spring", mass: 0.2, stiffness: 200, damping: 16 }}
+            className="flex items-center justify-center"
+          >
+            {isDark ? <Moon size={18} /> : <Sun size={18} />}
+          </motion.span>
+        </DockButton>
       </TooltipTrigger>
       <TooltipContent>{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
     </Tooltip>
@@ -71,44 +141,46 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 select-none">
       <TooltipProvider>
-        <Dock direction="middle" iconSize={44} iconMagnification={62} iconDistance={100}>
-          {/* Brand wordmark */}
+        <Dock
+          direction="middle"
+          iconSize={38}
+          iconMagnification={58}
+          iconDistance={130}
+        >
+          {/* ── Brand wordmark ── */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link
-                href="/"
-                className="px-3 flex items-center font-display font-black text-[18px] tracking-tight text-[var(--ink)] hover:opacity-70 transition-opacity focus:outline-none"
-                aria-label="Zephr home"
+              <motion.div
+                whileHover={{ opacity: 0.7 }}
+                whileTap={{ scale: 0.94 }}
+                transition={{ type: "spring", mass: 0.15, stiffness: 250, damping: 20 }}
               >
-                Zephr
-              </Link>
+                <Link
+                  href="/"
+                  aria-label="Sochi home"
+                  className="px-2.5 flex items-center font-display font-black text-[17px] tracking-tight text-[var(--ink)] focus:outline-none whitespace-nowrap"
+                >
+                  Sochi
+                </Link>
+              </motion.div>
             </TooltipTrigger>
             <TooltipContent>Home</TooltipContent>
           </Tooltip>
 
           <Separator orientation="vertical" />
 
-          {/* Nav links */}
+          {/* ── Nav links ── */}
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
             return (
               <DockIcon key={item.href}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link
-                      href={item.href}
-                      aria-label={item.label}
-                      className={cn(
-                        "flex items-center justify-center w-full h-full rounded-full transition-colors",
-                        isActive
-                          ? "bg-[var(--ink)] text-[var(--ink-inverse)]"
-                          : "text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                      )}
-                    >
-                      <item.icon size={19} />
-                    </Link>
+                    <DockLink href={item.href} active={isActive} label={item.label}>
+                      <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                    </DockLink>
                   </TooltipTrigger>
                   <TooltipContent>{item.label}</TooltipContent>
                 </Tooltip>
@@ -118,39 +190,43 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
 
           <Separator orientation="vertical" />
 
-          {/* Theme toggle */}
+          {/* ── Theme toggle ── */}
           <DockIcon>
             <ThemeDockItem />
           </DockIcon>
 
-          {/* Live indicator */}
+          {/* ── Live pulse ── */}
           {showLive && (
             <DockIcon>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center justify-center w-full h-full rounded-full cursor-default">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--low)] animate-pulse" />
+                    <motion.span
+                      className="block w-2.5 h-2.5 rounded-full bg-[var(--low)]"
+                      animate={{ scale: [1, 1.35, 1], opacity: [1, 0.55, 1] }}
+                      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                    />
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>Live</TooltipContent>
+                <TooltipContent>Live updates</TooltipContent>
               </Tooltip>
             </DockIcon>
           )}
 
-          {/* Lock (dashboard only) */}
+          {/* ── Lock ── */}
           {showLock && (
             <>
               <Separator orientation="vertical" />
               <DockIcon>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <DockButton
                       onClick={handleLock}
                       aria-label="Lock dashboard"
-                      className="flex items-center justify-center w-full h-full rounded-full text-[var(--muted-foreground)] hover:text-[var(--critical)] hover:bg-[var(--surface-2)] transition-colors"
+                      danger
                     >
-                      <Lock size={19} />
-                    </button>
+                      <Lock size={18} strokeWidth={2} />
+                    </DockButton>
                   </TooltipTrigger>
                   <TooltipContent>Lock dashboard</TooltipContent>
                 </Tooltip>
