@@ -1,10 +1,9 @@
-import { Header } from "@/components/header";
+import { NavDock } from "@/components/nav-dock";
 import { LoginForm } from "./login-form";
 
 export default function CommitteePage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
-      <Header />
+    <div className="min-h-screen flex flex-col items-center justify-center pb-28" style={{ backgroundColor: "var(--bg)" }}>
       <main className="flex-1 flex items-center justify-center w-full px-4 py-16">
         <div
           className="w-full max-w-[400px] p-8 rounded-[12px] border border-[var(--border-token)]"
@@ -17,6 +16,7 @@ export default function CommitteePage() {
           <LoginForm />
         </div>
       </main>
+      <NavDock />
     </div>
   );
 }

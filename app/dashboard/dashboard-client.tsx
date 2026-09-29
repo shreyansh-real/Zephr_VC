@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Header } from "@/components/header";
+import { NavDock } from "@/components/nav-dock";
 import { ClusterCard } from "@/components/cluster-card";
 import { ClusterDrawer } from "@/components/cluster-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -123,8 +123,8 @@ export function DashboardClient() {
   }, [fetchClusters, fetchStats]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
-      <Header showLock showLive />
+    <div className="min-h-screen pb-28" style={{ backgroundColor: "var(--bg)" }}>
+      <NavDock showLock showLive />
       <main className="max-w-[1200px] mx-auto px-4 md:px-8 py-8">
         {/* Today's Focus */}
         {!loading && !error && focusClusters.length > 0 && (
