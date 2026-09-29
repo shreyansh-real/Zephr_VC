@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const { flat_no, resident_name, raw_text } = parsed.data;
+  const { flat_no, resident_name, email, raw_text } = parsed.data;
   const db = getDb();
 
   // Fetch open clusters for AI context
@@ -129,6 +129,7 @@ export async function POST(req: Request) {
     cluster_id: clusterId,
     flat_no,
     resident_name,
+    email: email && email.trim().length > 0 ? email.trim() : null,
     raw_text,
     language: triage.language,
     category: triage.category,

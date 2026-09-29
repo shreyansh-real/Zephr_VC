@@ -18,6 +18,11 @@ export const ComplaintInputSchema = z.object({
     .min(1, "Flat number is required")
     .regex(/^[A-Za-z0-9][-A-Za-z0-9]{0,9}$/, "Invalid flat number (e.g. B-204 or 101)"),
   resident_name: z.string().min(1, "Name is required").max(100),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .optional()
+    .or(z.literal("")),
   raw_text: z
     .string()
     .min(10, "Complaint must be at least 10 characters")
@@ -51,6 +56,14 @@ export const SendReplySchema = z.object({
 });
 
 export type SendReply = z.infer<typeof SendReplySchema>;
+
+export const SendEmailSchema = z.object({
+  complaintId: z.string().optional(),
+  message: z.string().min(1, "Message cannot be empty"),
+  subject: z.string().optional(),
+});
+
+export type SendEmail = z.infer<typeof SendEmailSchema>;
 
 export const SendLiveSchema = z.object({
   complaintId: z.string().min(1, "complaintId is required"),

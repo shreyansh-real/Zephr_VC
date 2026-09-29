@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Eye, Check, RefreshCw, Send, User, ChevronDown, Zap, AlertCircle } from "lucide-react";
+import { X, Eye, Check, RefreshCw, Send, User, ChevronDown, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
 import { UrgencyChip, CategoryChip, type UrgencyLevel, type CategoryType } from "./urgency";
-
-const LIVE_SEND_ENABLED = process.env.NEXT_PUBLIC_SEND_LIVE_WHATSAPP === "true";
 
 interface Complaint {
   id: string;
   flat_no: string;
   resident_name: string;
+  email?: string | null;
   raw_text: string;
   summary: string;
   language: string;
@@ -22,15 +21,7 @@ interface Complaint {
   draft_reply: string | null;
   reply_sent_at: { _seconds: number } | null;
   created_at: { _seconds: number } | null;
-  /** E.164 phone stored at complaint creation — only present when resident opted in */
-  phone?: string;
 }
-
-type LiveSendState =
-  | { status: "idle" }
-  | { status: "sending" }
-  | { status: "sent"; maskedPhone: string }
-  | { status: "error" };
 
 interface ClusterData {
   id: string;
@@ -85,12 +76,11 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
   const [draft, setDraft] = useState("");
   const [draftLanguage, setDraftLanguage] = useState("");
   const [draftLoading, setDraftLoading] = useState(false);
-  const [sendLoading, setSendLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [sentMsg, setSentMsg] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportsOpen, setReportsOpen] = useState(false);
-  /** Per-complaint live-send state, keyed by complaint id */
-  const [liveState, setLiveState] = useState<Record<string, LiveSendState>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const fetchDetail = useCallback(async () => {
@@ -150,6 +140,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
 
   async function handleDraftReply() {
     setDraftLoading(true);
+    setEmailError(null);
     try {
       const res = await fetch(`/api/clusters/${clusterId}/draft-reply`, { method: "POST" });
       if (res.ok) {
@@ -162,48 +153,38 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
     }
   }
 
-  async function handleSendReply() {
+  async function handleSendEmail(specificComplaintId?: string) {
     if (!draft.trim()) return;
-    setSendLoading(true);
+    setEmailSending(true);
+    setEmailError(null);
+    setSentMsg(null);
     try {
-      const res = await fetch(`/api/clusters/${clusterId}/send-reply`, {
+      const res = await fetch(`/api/clusters/${clusterId}/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reply_text: draft }),
+        body: JSON.stringify({
+          complaintId: specificComplaintId,
+          message: draft,
+          subject: `Update on ${cluster?.title || "Complaint"}`,
+        }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = (await res.json()) as { sent_count: number; sent_at: string };
-        setSentMsg(`Sent to ${data.sent_count} resident${data.sent_count !== 1 ? "s" : ""}`);
-        onUpdate();
-        void fetchDetail();
-      }
-    } finally {
-      setSendLoading(false);
-    }
-  }
-
-  async function handleSendLive(complaintId: string) {
-    if (!draft.trim()) return;
-    setLiveState((prev) => ({ ...prev, [complaintId]: { status: "sending" } }));
-    try {
-      const res = await fetch(`/api/clusters/${clusterId}/send-live`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ complaintId, message: draft }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { masked_phone: string };
-        setLiveState((prev) => ({
-          ...prev,
-          [complaintId]: { status: "sent", maskedPhone: data.masked_phone },
-        }));
+        const count = data.sent_count ?? 1;
+        setSentMsg(
+          specificComplaintId
+            ? `Email sent successfully to resident`
+            : `Email dispatched to ${count} resident${count !== 1 ? "s" : ""}${data.is_simulated ? " (dev simulated)" : ""}`
+        );
         onUpdate();
         void fetchDetail();
       } else {
-        setLiveState((prev) => ({ ...prev, [complaintId]: { status: "error" } }));
+        setEmailError(data.error || "Failed to send email");
       }
     } catch {
-      setLiveState((prev) => ({ ...prev, [complaintId]: { status: "error" } }));
+      setEmailError("Network error sending email. Please try again.");
+    } finally {
+      setEmailSending(false);
     }
   }
 
@@ -213,6 +194,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
       : null;
 
   const isCritical = cluster?.urgency === "Critical";
+  const residentsWithEmail = complaints.filter((c) => Boolean(c.email));
 
   return (
     <>
@@ -229,7 +211,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
         aria-modal="true"
         aria-labelledby="drawer-title"
         className="fixed right-0 top-0 bottom-0 z-50 flex flex-col bg-[var(--surface)] border-l border-[var(--border-token)] shadow-2xl overflow-hidden"
-        style={{ width: "min(520px, 100vw)" }}
+        style={{ width: "min(540px, 100vw)" }}
       >
 
         {/* ── Sticky header ── */}
@@ -395,7 +377,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                 </button>
 
                 {reportsOpen && (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2.5">
                     {complaints.map((c) => (
                       <div
                         key={c.id}
@@ -409,13 +391,21 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                             {formatTs(c.created_at)}
                           </span>
                         </div>
+
+                        {c.email && (
+                          <div className="flex items-center gap-1.5 text-[12px] text-[var(--muted-foreground)]">
+                            <Mail size={12} />
+                            <span>{c.email}</span>
+                          </div>
+                        )}
+
                         <p className="text-[14px] text-[var(--ink)] leading-relaxed">{c.raw_text}</p>
                         {c.summary && (
                           <p className="text-[13px] text-[var(--muted-foreground)] italic">{c.summary}</p>
                         )}
                         {c.reply_sent_at && (
                           <p className="text-[13px] font-semibold flex items-center gap-1" style={{ color: "var(--resolved)" }}>
-                            <Check size={13} /> Reply sent {formatTs(c.reply_sent_at)}
+                            <Check size={13} /> Email update sent {formatTs(c.reply_sent_at)}
                           </p>
                         )}
                       </div>
@@ -424,12 +414,18 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                 )}
               </Section>
 
-              {/* ── Reply panel ── */}
-              <Section title="Reply to residents">
-                <div className="flex flex-col gap-3 p-4 rounded-xl border border-[var(--border-token)] bg-[var(--bg)]">
+              {/* ── Volunteer Email Dispatch Panel ── */}
+              <Section title="Send update to residents">
+                <div className="flex flex-col gap-3.5 p-4 rounded-xl border border-[var(--border-token)] bg-[var(--bg)]">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <p className="text-[14px] text-[var(--muted-foreground)]">
-                      Draft a message to all {complaints.length} resident{complaints.length !== 1 ? "s" : ""} in this cluster
+                    <p className="text-[13px] text-[var(--muted-foreground)]">
+                      {residentsWithEmail.length > 0 ? (
+                        <span>
+                          <strong className="text-[var(--ink)] font-semibold">{residentsWithEmail.length}</strong> resident{residentsWithEmail.length !== 1 ? "s" : ""} registered with email
+                        </span>
+                      ) : (
+                        <span>No emails registered for this cluster yet</span>
+                      )}
                     </p>
                     {draftLanguage && (
                       <span className="px-2 py-0.5 rounded bg-[var(--surface-2)] text-[12px] text-[var(--muted-foreground)] border border-[var(--border-token)]">
@@ -442,86 +438,51 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     rows={4}
-                    placeholder="Click 'Generate draft' or type your reply…"
-                    className="w-full min-h-[110px] px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] resize-y placeholder:text-[var(--muted-foreground)]"
+                    placeholder="Click 'Generate draft' with AI or type custom update message to residents…"
+                    className="w-full min-h-[110px] px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border-token)] text-[14px] text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] resize-y placeholder:text-[var(--muted-foreground)]"
                     style={{ lineHeight: 1.6 }}
                   />
 
                   {sentMsg && (
-                    <p className="text-[14px] font-semibold flex items-center gap-1.5" style={{ color: "var(--resolved)" }}>
-                      <Check size={14} /> {sentMsg}
-                    </p>
+                    <div className="p-3 rounded-lg bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-[var(--resolved)] shrink-0" />
+                      <p className="text-[13px] font-semibold text-[var(--resolved)]">
+                        {sentMsg}
+                      </p>
+                    </div>
                   )}
 
-                  {/* Top action row: Generate draft + Send on WhatsApp (wa.me, always available) */}
-                  <div className="flex gap-2 flex-wrap">
+                  {emailError && (
+                    <div className="p-3 rounded-lg bg-[var(--critical-tint)] border border-[var(--critical)] flex items-center gap-2">
+                      <AlertCircle size={16} className="text-[var(--critical)] shrink-0" />
+                      <p className="text-[13px] font-semibold text-[var(--critical)]">
+                        {emailError}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Actions Row */}
+                  <div className="flex gap-2.5 flex-wrap items-center pt-1">
                     <button
                       onClick={handleDraftReply}
                       disabled={draftLoading}
-                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--border-token)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none disabled:opacity-50"
+                      className="inline-flex items-center gap-2 h-9 px-3.5 rounded-lg font-semibold text-[13px] border border-[var(--border-token)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none disabled:opacity-50"
                     >
-                      <RefreshCw size={14} className={draftLoading ? "animate-spin" : ""} />
-                      {draftLoading ? "Generating…" : "Generate draft"}
+                      <RefreshCw size={13} className={draftLoading ? "animate-spin" : ""} />
+                      {draftLoading ? "Generating…" : "Generate AI Draft"}
                     </button>
+
                     <button
-                      onClick={handleSendReply}
-                      disabled={!draft.trim() || sendLoading}
-                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[14px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.98] transition-all focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      onClick={() => handleSendEmail()}
+                      disabled={!draft.trim() || emailSending || residentsWithEmail.length === 0}
+                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[13px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.98] transition-all focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Send size={14} />
-                      {sendLoading ? "Sending…" : `Send on WhatsApp`}
+                      <Mail size={14} />
+                      {emailSending
+                        ? "Sending Email…"
+                        : `Send Email to ${residentsWithEmail.length || complaints.length}`}
                     </button>
                   </div>
-
-                  {/* Per-complaint "Send automatically" — only when flag is on and complaint has a phone */}
-                  {LIVE_SEND_ENABLED && draft.trim() && (
-                    <div className="flex flex-col gap-2 pt-1 border-t border-[var(--border-token)]">
-                      <p className="text-[12px] text-[var(--muted-foreground)]">
-                        Send automatically (Twilio sandbox — recipient must have joined first)
-                      </p>
-                      {complaints.map((c) => {
-                        if (!c.phone) return null;
-                        const ls: LiveSendState = liveState[c.id] ?? { status: "idle" };
-                        return (
-                          <div key={c.id} className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[13px] text-[var(--ink)] font-semibold shrink-0">
-                                {c.flat_no} — {c.resident_name}
-                              </span>
-                              {ls.status === "idle" && (
-                                <button
-                                  onClick={() => void handleSendLive(c.id)}
-                                  disabled={ls.status !== "idle"}
-                                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold
-                                    border border-[var(--low)] text-[var(--low)]
-                                    hover:bg-[var(--low-tint)] transition-colors focus:outline-none"
-                                >
-                                  <Zap size={12} />
-                                  Send automatically
-                                </button>
-                              )}
-                              {ls.status === "sending" && (
-                                <span className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted-foreground)]">
-                                  <RefreshCw size={12} className="animate-spin" /> Sending…
-                                </span>
-                              )}
-                              {ls.status === "sent" && (
-                                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--resolved)" }}>
-                                  <Check size={13} /> Sent to {ls.maskedPhone}
-                                </span>
-                              )}
-                              {ls.status === "error" && (
-                                <span className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted-foreground)]">
-                                  <AlertCircle size={13} className="text-[var(--high)]" />
-                                  Couldn&apos;t send automatically. Use Send on WhatsApp instead.
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               </Section>
             </>

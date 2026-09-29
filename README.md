@@ -40,11 +40,9 @@ Required:
 Optional (for realtime dashboard updates):
 - `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID` — Firebase client SDK (web app config)
 
-Optional (Twilio WhatsApp live send):
-- `SEND_LIVE_WHATSAPP=true` + `NEXT_PUBLIC_SEND_LIVE_WHATSAPP=true` — enable the "Send automatically" button in the reply panel
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` — Twilio credentials (server-side; auth token is never logged or exposed to the client)
-
-> **Twilio sandbox note:** Live send uses the Twilio WhatsApp sandbox. Recipients must join the sandbox first by sending a join phrase to your Twilio number before they can receive messages. Production deployments should migrate to the WhatsApp Business API.
+Email Dispatch (Resend):
+- `RESEND_API_KEY` — API key from https://resend.com for emailing residents updates
+- `RESEND_FROM_EMAIL` — Verified sender email (e.g. `Sochi Society <onboarding@resend.dev>`)
 
 ### 3. Firebase setup
 
@@ -119,8 +117,8 @@ Set all env vars from `.env.local` in Vercel dashboard or via CLI.
 | `/api/clusters` | GET | Committee cookie |
 | `/api/clusters/[id]` | GET, PATCH | Committee cookie |
 | `/api/clusters/[id]/draft-reply` | POST | Committee cookie |
+| `/api/clusters/[id]/send-email` | POST | Committee cookie (dispatches email via Resend) |
 | `/api/clusters/[id]/send-reply` | POST | Committee cookie |
-| `/api/clusters/[id]/send-live` | POST | Committee cookie (requires `SEND_LIVE_WHATSAPP=true`) |
 | `/api/stats` | GET | Committee cookie |
 
 ## Acceptance checklist
