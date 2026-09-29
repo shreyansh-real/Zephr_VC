@@ -1,183 +1,322 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { ClusterCard } from "@/components/cluster-card";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-import { ArrowRight, ShieldCheck, Zap, MessageSquareWarning, Sparkles, CheckCircle2 } from "lucide-react";
+import { 
+  ArrowRight, 
+  ShieldCheck, 
+  Zap, 
+  Sparkles, 
+  Droplets, 
+  Volume2, 
+  Users, 
+  CheckCircle2, 
+  Radio, 
+  Send,
+  BellRing
+} from "lucide-react";
 
-const DEMO_CLUSTER = {
-  id: "demo",
-  title: "No water in Block B",
-  category: "Water",
-  urgency: "High",
-  status: "New",
-  assignee: null,
-  complaint_count: 7,
-  flats: ["B-101", "B-102", "B-201"],
-  needs_review: false,
-  escalated: false,
-  created_at: { _seconds: Math.floor(Date.now() / 1000) - 7200 },
-  urgency_rank: 2,
-};
+interface TabData {
+  id: string;
+  label: string;
+  category: string;
+  title: string;
+  urgency: "Critical" | "High" | "Medium";
+  urgencyColor: string;
+  badgeBg: string;
+  flats: string[];
+  complaintCount: number;
+  sampleChat: string;
+  resolutionTime: string;
+  broadcastMessage: string;
+}
 
-const DEMO_MESSAGES = [
-  { id: 1, from: "Flat B-201", text: "Bhai paani nahi aa raha subah se. Koi sun raha hai?" },
-  { id: 2, from: "Flat B-102", text: "Same here. Water supply band hai since 6am." },
-  { id: 3, from: "Flat B-304", text: "Lift ke andar smell aa rahi hai, please check karo." },
-  { id: 4, from: "Flat B-101", text: "No water again. Third time this week. Pls fix urgently!!" },
+const TABS: TabData[] = [
+  {
+    id: "water",
+    label: "💧 Water Shortage",
+    category: "Water Supply",
+    title: "Tower B Overhead Tank Empty (Pump Trip)",
+    urgency: "Critical",
+    urgencyColor: "var(--critical)",
+    badgeBg: "var(--critical-tint)",
+    flats: ["B-102", "B-204", "B-501", "B-702", "B-903"],
+    complaintCount: 14,
+    sampleChat: '"Paani nahi aa raha 6:30 baje se... please check pump!"',
+    resolutionTime: "Auto-escalated in 12s",
+    broadcastMessage: "Plumber onsite. Motor reset completed. Water supply resuming by 8:30 AM."
+  },
+  {
+    id: "lift",
+    label: "🛗 Lift #2 Breakdown",
+    category: "Elevator Maintenance",
+    title: "Tower A Passenger Lift Stuck at 4th Floor",
+    urgency: "Critical",
+    urgencyColor: "var(--critical)",
+    badgeBg: "var(--critical-tint)",
+    flats: ["A-401", "A-404", "A-802"],
+    complaintCount: 8,
+    sampleChat: '"Lift #2 making strange sound and halted at 4th floor."',
+    resolutionTime: "Technician dispatched",
+    broadcastMessage: "OTIS technician at Tower A. Lift #1 operational, Lift #2 under inspection."
+  },
+  {
+    id: "noise",
+    label: "🔊 Late Night Noise",
+    category: "Community & Quiet Hours",
+    title: "Clubhouse Terrace Music After 10:30 PM",
+    urgency: "Medium",
+    urgencyColor: "var(--high)",
+    badgeBg: "var(--high-tint)",
+    flats: ["C-201", "C-202"],
+    complaintCount: 5,
+    sampleChat: '"Too loud party noise near Tower C terrace."',
+    resolutionTime: "Guard alerted",
+    broadcastMessage: "Security team requested clubhouse music volume be turned down per RWA rules."
+  }
 ];
 
 export function LandingHero() {
-  const hasCountedRef = useRef<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("water");
+  const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
   const typewriterWords = [
-    { text: "20" },
-    { text: "messages." },
-    { text: "6" },
-    { text: "issues." },
-    { text: "Start" },
-    { text: "with" },
-    { text: "the" },
-    { text: "red", className: "text-[var(--critical)]" },
-    { text: "one.", className: "text-[var(--critical)]" },
+    { text: "Smart" },
+    { text: "AI" },
+    { text: "Triage" },
+    { text: "for" },
+    { text: "Housing" },
+    { text: "Societies." },
   ];
 
   return (
     <BackgroundBeamsWithCollision className="py-12 md:py-20">
       <div className="max-w-[1200px] w-full mx-auto px-4 md:px-8 relative z-10">
         
-        {/* Pill Badge */}
-        <div className="flex justify-center md:justify-start mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface)]/90 backdrop-blur-sm shadow-sm">
-            <span className="flex h-2 w-2 rounded-full bg-[var(--critical)] animate-pulse" />
-            <span className="text-[13px] font-semibold tracking-wide text-[var(--ink)]">
-              AI Society Triage • Built for RWA Committees
+        {/* Top Community Badge */}
+        <div className="flex justify-center md:justify-start mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface)]/90 backdrop-blur-md shadow-sm">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-[var(--critical)] animate-pulse" />
+            <span className="text-[13px] sm:text-[14px] font-bold tracking-wide text-[var(--ink)]">
+              Next-Gen RWA & Society Management System
             </span>
           </div>
         </div>
 
-        {/* Hero Top Grid */}
-        <div className="max-w-[840px] mb-12 text-center md:text-left">
-          {/* Animated Headline */}
+        {/* 2-Line Hero Section Header */}
+        <div className="max-w-[900px] mb-10 text-center md:text-left">
+          {/* Line 1: Typewriter Animation */}
           <TypewriterEffectSmooth 
             words={typewriterWords} 
-            className="justify-center md:justify-start mb-4" 
+            className="justify-center md:justify-start -mb-1" 
           />
 
-          {/* Subtitle */}
-          <p className="text-[18px] sm:text-[20px] md:text-[22px] font-medium text-[var(--muted-foreground)] mb-8 leading-relaxed max-w-[720px]">
-            AI reads noisy WhatsApp chats, extracts real problems, groups duplicates into single actionable clusters, and prioritizes urgent emergencies.
+          {/* Line 2: Catchy & Informative Follow-up */}
+          <h2 className="text-[26px] sm:text-[34px] md:text-[44px] font-black font-display tracking-tight text-[var(--ink)] leading-[1.15] mb-5">
+            Turn WhatsApp chaos into prioritized, solved issues.
+          </h2>
+
+          {/* High-Clarity Subtitle */}
+          <p className="text-[17px] sm:text-[19px] md:text-[20px] font-normal text-[var(--muted-foreground)] mb-8 leading-relaxed max-w-[780px]">
+            Residents report problems in plain English, Hindi, or Hinglish. AI deduplicates 50+ messages, detects emergencies like water cuts &amp; lift failures, and equips your committee to resolve issues with 1-click WhatsApp broadcasts.
           </p>
 
-          {/* CTA Buttons */}
+          {/* High-Contrast CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
             <Link
               href="/report"
-              className="group relative inline-flex items-center justify-center gap-2 h-14 px-8 rounded-xl font-bold text-[17px] bg-[var(--ink)] text-[var(--ink-inverse)] shadow-lg shadow-black/10 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"
+              className="group relative inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-xl font-black text-[17px] bg-[var(--ink)] text-[var(--ink-inverse)] shadow-lg shadow-black/15 hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"
             >
-              <span>I live here: Report a problem</span>
+              <span>Report a Problem (No App Needed)</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Link>
 
             <Link
               href="/committee"
-              className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-xl font-bold text-[17px] border-2 border-[var(--ink)] text-[var(--ink)] bg-[var(--surface)]/80 backdrop-blur-sm hover:bg-[var(--surface-2)] hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"
+              className="inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-xl font-bold text-[17px] border-2 border-[var(--ink)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)] shadow-sm"
             >
               <ShieldCheck className="w-5 h-5 text-[var(--ink)]" />
               <span>Committee Dashboard</span>
             </Link>
           </div>
 
-          {/* Quick Value Metrics */}
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-6 text-[13px] sm:text-[14px] font-medium text-[var(--muted-foreground)]">
+          {/* Fast Feature Badges */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-6 text-[13px] sm:text-[14px] font-bold text-[var(--muted-foreground)]">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-[var(--low)]" />
-              <span>Hinglish & Multi-dialect AI</span>
+              <span>Multilingual (Hindi/English/Hinglish)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-[var(--high)]" />
-              <span>&lt; 3s Automated Triage</span>
+              <span>Auto-Cluster 50+ Tickets</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[var(--critical)]" />
-              <span>Zero Lost Complaints</span>
+              <BellRing className="w-4 h-4 text-[var(--critical)]" />
+              <span>1-Click RWA Broadcast</span>
             </div>
           </div>
         </div>
 
-        {/* Before / After Interactive Showcase */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* Interactive Society Pulse & Live Resolution Hub */}
+        <div className="rounded-2xl border-2 border-[var(--border-token)] bg-[var(--surface)] shadow-lg overflow-hidden backdrop-blur-md">
           
-          {/* Before — WhatsApp Chaos */}
-          <div
-            className="rounded-2xl border-2 border-[var(--border-token)] overflow-hidden shadow-sm backdrop-blur-sm"
-            style={{ backgroundColor: "var(--surface)" }}
-            aria-label="Before: raw WhatsApp messages"
-          >
-            <div
-              className="px-5 py-3 border-b border-[var(--border-token)] flex items-center justify-between"
-              style={{ backgroundColor: "var(--surface-2)" }}
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquareWarning className="w-4 h-4 text-[var(--critical)]" />
-                <span className="text-[13px] font-bold text-[var(--ink)] uppercase tracking-wider">
-                  Before: WhatsApp Chaos
-                </span>
-              </div>
-              <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-[var(--critical-tint)] text-[var(--critical)] border border-[var(--critical)]">
-                47 unread
+          {/* Header Bar */}
+          <div className="px-5 py-4 border-b border-[var(--border-token)] bg-[var(--surface-2)] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Radio className="w-4 h-4 text-[var(--critical)] animate-pulse" />
+              <span className="text-[14px] font-bold text-[var(--ink)] tracking-wide">
+                Live Society Simulation • Palm Grove Heights RWA
               </span>
             </div>
-            <ul className="divide-y divide-[var(--border-token)]">
-              {DEMO_MESSAGES.map((msg) => (
-                <li key={msg.id} className="px-5 py-3.5 flex flex-col gap-1 transition-colors hover:bg-[var(--surface-2)]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-bold text-[var(--ink)]">{msg.from}</span>
-                    <span className="text-[11px] text-[var(--muted-foreground)]">Just now</span>
-                  </div>
-                  <span className="text-[15px] text-[var(--ink)]" style={{ lineHeight: 1.45 }}>{msg.text}</span>
-                </li>
+
+            {/* Quick Interactive Selector */}
+            <div className="flex items-center gap-1.5 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border-token)]">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1 text-[13px] font-bold rounded-md transition-all ${
+                    activeTab === tab.id
+                      ? "bg-[var(--ink)] text-[var(--ink-inverse)] shadow-sm"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
-              <li className="px-5 py-3 text-[14px] text-[var(--muted-foreground)] italic flex items-center justify-between bg-[var(--surface-2)]/50">
-                <span>+43 more duplicate complaints buried in chat…</span>
-                <span className="text-[12px] font-medium text-[var(--critical)]">Unresolved</span>
-              </li>
-            </ul>
+            </div>
           </div>
 
-          {/* After — AI Clustered & Actionable */}
-          <div aria-label="After: AI-grouped issue" className="flex flex-col">
-            <div
-              className="px-5 py-3 rounded-t-2xl border-2 border-b-0 border-[var(--border-token)] flex items-center justify-between"
-              style={{ backgroundColor: "var(--surface-2)" }}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[var(--low)]" />
-                <span className="text-[13px] font-bold text-[var(--ink)] uppercase tracking-wider">
-                  After: AI Clustered & Ranked
+          {/* Interactive Hub Grid */}
+          <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Left Column: Raw Resident Messages (Grouped Automatically) */}
+            <div className="lg:col-span-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  Incoming Resident Submissions
+                </span>
+                <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--critical-tint)] text-[var(--critical)] border border-[var(--critical)]">
+                  {currentTab.complaintCount} Complaints Clustered
                 </span>
               </div>
-              <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-[var(--low-tint)] text-[var(--low)] border border-[var(--low)]">
-                6 clean tickets
-              </span>
-            </div>
-            
-            <div className="rounded-b-2xl border-2 border-t-0 border-[var(--border-token)] overflow-hidden shadow-sm">
-              <ClusterCard
-                cluster={DEMO_CLUSTER}
-                variant="row"
-                onClick={() => {}}
-                onUpdate={() => {}}
-                hasCountedRef={hasCountedRef}
-              />
+
+              {/* Chat Simulation Bubble */}
+              <div className="p-4 rounded-xl border border-[var(--border-token)] bg-[var(--surface-2)] flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[12px] text-[var(--muted-foreground)]">
+                  <span className="font-bold text-[var(--ink)]">Recent Voice/Text Submission</span>
+                  <span>Just now</span>
+                </div>
+                <p className="text-[15px] font-medium text-[var(--ink)] italic bg-[var(--surface)] p-3 rounded-lg border border-[var(--border-token)]">
+                  {currentTab.sampleChat}
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[12px] font-semibold text-[var(--muted-foreground)]">Flats reporting:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {currentTab.flats.map((flat) => (
+                      <span key={flat} className="text-[11px] font-bold px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-token)]">
+                        {flat}
+                      </span>
+                    ))}
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 text-[var(--muted-foreground)]">
+                      +{currentTab.complaintCount - currentTab.flats.length} more
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Auto-Diagnosis */}
+              <div className="p-3.5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)] flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[var(--low)]" />
+                  <span className="font-bold text-[var(--ink)]">AI Status:</span>
+                  <span className="text-[var(--muted-foreground)]">{currentTab.resolutionTime}</span>
+                </div>
+                <span className="font-bold text-[var(--low)]">100% Grouped</span>
+              </div>
             </div>
 
-            <p className="text-[13px] text-[var(--muted-foreground)] mt-2.5 px-2 text-center md:text-left">
-              💡 7 resident messages automatically linked to 1 water supply cluster with 1-click committee broadcast reply.
-            </p>
+            {/* Right Column: AI Cluster & Instant RWA WhatsApp Broadcast */}
+            <div className="lg:col-span-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  Automated Committee Action
+                </span>
+                <span 
+                  className="text-[12px] font-black px-2.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: currentTab.badgeBg, color: currentTab.urgencyColor, border: `1px solid ${currentTab.urgencyColor}` }}
+                >
+                  {currentTab.urgency} Priority
+                </span>
+              </div>
+
+              {/* Resolved Action Box */}
+              <div className="p-4 rounded-xl border-2 border-[var(--border-token)] bg-[var(--surface)] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black px-2 py-0.5 rounded bg-[var(--surface-2)] text-[var(--ink)] uppercase">
+                    {currentTab.category}
+                  </span>
+                </div>
+
+                <h4 className="text-[18px] font-bold text-[var(--ink)]">
+                  {currentTab.title}
+                </h4>
+
+                {/* Instant 1-Click WhatsApp Broadcast Feature */}
+                <div className="mt-1 pt-3 border-t border-[var(--border-token)] flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5 text-[var(--low)]" />
+                      1-Click WhatsApp Broadcast to all {currentTab.complaintCount} Flats:
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[var(--surface-2)] text-[13px] font-medium text-[var(--ink)] border border-[var(--border-token)] leading-snug">
+                    📢 &quot;{currentTab.broadcastMessage}&quot;
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[12px] text-[var(--muted-foreground)] font-medium">
+                    ⚡ Saves 45 minutes of committee manual calls
+                  </span>
+                  <Link
+                    href="/committee"
+                    className="text-[13px] font-bold text-[var(--ink)] hover:underline flex items-center gap-1"
+                  >
+                    Open in Dashboard &rarr;
+                  </Link>
+                </div>
+              </div>
+            </div>
+
           </div>
+
+          {/* Bottom Society Benefits Strip */}
+          <div className="border-t border-[var(--border-token)] bg-[var(--surface-2)] px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <Droplets className="w-5 h-5 text-[var(--critical)] mb-1" />
+              <span className="text-[13px] font-bold text-[var(--ink)]">Water &amp; Power</span>
+              <span className="text-[11px] text-[var(--muted-foreground)]">Auto pump trip alerts</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Zap className="w-5 h-5 text-[var(--high)] mb-1" />
+              <span className="text-[13px] font-bold text-[var(--ink)]">Lift Emergencies</span>
+              <span className="text-[11px] text-[var(--muted-foreground)]">Instant technician dispatch</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Volume2 className="w-5 h-5 text-[var(--low)] mb-1" />
+              <span className="text-[13px] font-bold text-[var(--ink)]">Noise &amp; Parking</span>
+              <span className="text-[11px] text-[var(--muted-foreground)]">Rule violation tracking</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Users className="w-5 h-5 text-[var(--ink)] mb-1" />
+              <span className="text-[13px] font-bold text-[var(--ink)]">Zero Resident Spam</span>
+              <span className="text-[11px] text-[var(--muted-foreground)]">Clean committee peace</span>
+            </div>
+          </div>
+
         </div>
 
       </div>
