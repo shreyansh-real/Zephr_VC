@@ -107,7 +107,7 @@ function ThemeDockItem() {
           <AnimatedThemeToggler duration={450} />
         </div>
       </TooltipTrigger>
-      <TooltipContent>Toggle theme</TooltipContent>
+      <TooltipContent side="right">Toggle theme</TooltipContent>
     </Tooltip>
   );
 }
@@ -122,7 +122,7 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
   }
 
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 select-none">
+    <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 select-none">
       <TooltipProvider>
         <Dock
           direction="middle"
@@ -141,16 +141,16 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
                 <Link
                   href="/"
                   aria-label="Sochi home"
-                  className="px-2.5 flex items-center font-display font-black text-[17px] tracking-tight text-[var(--ink)] focus:outline-none whitespace-nowrap"
+                  className="flex items-center justify-center font-display font-black text-[15px] tracking-tight text-[var(--ink)] focus:outline-none"
                 >
-                  Sochi
+                  S
                 </Link>
               </motion.div>
             </TooltipTrigger>
-            <TooltipContent>Home</TooltipContent>
+            <TooltipContent side="right">Sochi — home</TooltipContent>
           </Tooltip>
 
-          <Separator orientation="vertical" />
+          <Separator orientation="horizontal" />
 
           {/* ── Nav links ── */}
           {NAV_ITEMS.map((item) => {
@@ -163,13 +163,13 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
                       <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                     </DockLink>
                   </TooltipTrigger>
-                  <TooltipContent>{item.label}</TooltipContent>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
               </DockIcon>
             );
           })}
 
-          <Separator orientation="vertical" />
+          <Separator orientation="horizontal" />
 
           {/* ── Theme toggle ── */}
           <DockIcon>
@@ -189,7 +189,7 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
                     />
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>Live updates</TooltipContent>
+                <TooltipContent side="right">Live updates</TooltipContent>
               </Tooltip>
             </DockIcon>
           )}
@@ -197,7 +197,7 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
           {/* ── Lock ── */}
           {showLock && (
             <>
-              <Separator orientation="vertical" />
+              <Separator orientation="horizontal" />
               <DockIcon>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -209,7 +209,7 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
                       <Lock size={18} strokeWidth={2} />
                     </DockButton>
                   </TooltipTrigger>
-                  <TooltipContent>Lock dashboard</TooltipContent>
+                  <TooltipContent side="right">Lock dashboard</TooltipContent>
                 </Tooltip>
               </DockIcon>
             </>

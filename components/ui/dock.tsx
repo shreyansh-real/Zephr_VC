@@ -12,7 +12,7 @@ import React, { useRef, useState } from "react";
 
 // ─── Dock Context ─────────────────────────────────────────────────────────────
 interface DockContextValue {
-  mouseX: MotionValue<number>;
+  mouseY: MotionValue<number>;
   iconSize: number;
   iconMagnification: number;
   iconDistance: number;
@@ -23,13 +23,13 @@ const DEFAULT_MAGNIFICATION = 70;
 const DEFAULT_DISTANCE = 140;
 
 export const DockContext = React.createContext<DockContextValue>({
-  mouseX: { get: () => Infinity } as MotionValue<number>,
+  mouseY: { get: () => Infinity } as MotionValue<number>,
   iconSize: DEFAULT_SIZE,
   iconMagnification: DEFAULT_MAGNIFICATION,
   iconDistance: DEFAULT_DISTANCE,
 });
 
-// ─── Dock ─────────────────────────────────────────────────────────────────────
+// ─── Dock (vertical) ──────────────────────────────────────────────────────────
 interface DockProps {
   className?: string;
   children: React.ReactNode;
@@ -42,27 +42,28 @@ interface DockProps {
 export function Dock({
   className,
   children,
-  direction = "bottom",
+  direction = "middle",
   iconSize = DEFAULT_SIZE,
   iconMagnification = DEFAULT_MAGNIFICATION,
   iconDistance = DEFAULT_DISTANCE,
 }: DockProps) {
-  const mouseX = useMotionValue(Infinity);
+  const mouseY = useMotionValue(Infinity);
 
   const alignmentClass =
     direction === "top"
-      ? "items-start"
+      ? "justify-start"
       : direction === "middle"
-      ? "items-center"
-      : "items-end";
+      ? "justify-center"
+      : "justify-end";
 
   return (
-    <DockContext.Provider value={{ mouseX, iconSize, iconMagnification, iconDistance }}>
+    <DockContext.Provider value={{ mouseY, iconSize, iconMagnification, iconDistance }}>
       <motion.div
-        onMouseMove={(e) => mouseX.set(e.pageX)}
-        onMouseLeave={() => mouseX.set(Infinity)}
+        onMouseMove={(e) => mouseY.set(e.pageY)}
+        onMouseLeave={() => mouseY.set(Infinity)}
         className={cn(
-          "flex h-[66px] gap-1.5 px-4 items-center rounded-2xl",
+          // vertical pill
+          "flex flex-col w-[66px] gap-1.5 py-4 items-center rounded-2xl",
           "bg-[var(--surface)]/75 backdrop-blur-2xl",
           "border border-[var(--border-token)]",
           "shadow-[0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.10),0_1px_0px_rgba(255,255,255,0.06)_inset]",
@@ -87,12 +88,13 @@ export function DockIcon({ className, children }: DockIconProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
-  const { mouseX, iconSize, iconMagnification, iconDistance } =
+  const { mouseY, iconSize, iconMagnification, iconDistance } =
     React.useContext(DockContext);
 
-  const distanceFromMouse = useTransform(mouseX, (val) => {
-    const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
-    return val - bounds.x - bounds.width / 2;
+  // Distance along Y axis drives size
+  const distanceFromMouse = useTransform(mouseY, (val) => {
+    const bounds = ref.current?.getBoundingClientRect() ?? { y: 0, height: 0 };
+    return val - bounds.y - bounds.height / 2;
   });
 
   const sizeTarget = useTransform(
@@ -107,12 +109,13 @@ export function DockIcon({ className, children }: DockIconProps) {
     damping: 18,
   });
 
-  const yTarget = useTransform(
+  // Icons lift rightward (positive x) on hover instead of upward
+  const xTarget = useTransform(
     distanceFromMouse,
     [-iconDistance, 0, iconDistance],
-    [0, -8, 0]
+    [0, 8, 0]
   );
-  const y = useSpring(yTarget, {
+  const x = useSpring(xTarget, {
     mass: 0.15,
     stiffness: 100,
     damping: 18,
@@ -121,7 +124,7 @@ export function DockIcon({ className, children }: DockIconProps) {
   return (
     <motion.div
       ref={ref}
-      style={{ width: size, height: size, y }}
+      style={{ width: size, height: size, x }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       className={cn(
