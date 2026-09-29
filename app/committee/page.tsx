@@ -13,7 +13,7 @@ export default function CommitteePage() {
             <div className="relative mb-3 group">
               <div className="w-16 h-16 rounded-2xl p-1 bg-[var(--surface-2)] border border-[var(--border-token)] shadow-md flex items-center justify-center overflow-hidden">
                 <img
-                  src="/logo.png"
+                  src="/favicon.svg"
                   alt="Sochi Logo"
                   className="w-full h-full object-cover rounded-xl"
                 />

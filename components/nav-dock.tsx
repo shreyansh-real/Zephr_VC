@@ -145,7 +145,7 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
                   className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-[var(--border-token)] focus:outline-none bg-[var(--surface-2)] shadow-sm"
                 >
                   <img
-                    src="/logo.png"
+                    src="/favicon.svg"
                     alt="Sochi"
                     className="w-full h-full object-cover"
                   />

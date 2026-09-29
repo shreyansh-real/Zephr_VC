@@ -159,7 +159,7 @@ export function DashboardClient() {
         <header className="sticky top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl p-0.5 bg-[var(--surface-2)] border border-[var(--border-token)] overflow-hidden shrink-0 shadow-sm">
-              <img src="/logo.png" alt="Sochi" className="w-full h-full object-cover rounded-lg" />
+              <img src="/favicon.svg" alt="Sochi" className="w-full h-full object-cover rounded-lg" />
             </div>
             <div>
               <h1 className="font-display font-black text-[20px] sm:text-[22px] leading-none tracking-tight text-[var(--ink)]">
