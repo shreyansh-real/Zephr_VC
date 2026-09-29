@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { NavDock } from "@/components/nav-dock";
 import { ClusterCard } from "@/components/cluster-card";
 import { ClusterDrawer } from "@/components/cluster-drawer";
@@ -109,6 +110,21 @@ export function DashboardClient() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const hasCountedRef = useRef<boolean>(false);
   const fetchKey = useRef(0);
+
+  // Lock body scrolling when mobile notifications sheet is active
+  useEffect(() => {
+    if (notificationsOpen) {
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+      if (isMobile) {
+        document.body.style.overflow = "hidden";
+      }
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [notificationsOpen]);
 
   const fetchClusters = useCallback(async () => {
     const key = ++fetchKey.current;
@@ -263,7 +279,7 @@ export function DashboardClient() {
               <span className="hidden sm:inline">Refresh</span>
             </button>
 
-            {/* Notifications Popover Toggle */}
+            {/* Notifications Popover / Mobile Drawer Toggle */}
             <div className="relative">
               <button
                 onClick={() => setNotificationsOpen((v) => !v)}
@@ -283,74 +299,133 @@ export function DashboardClient() {
                 )}
               </button>
 
-              {/* Notification Popover Dropdown */}
-              {notificationsOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
-                  <div className="absolute right-0 top-11 z-50 w-[320px] sm:w-[380px] max-w-[calc(100vw-24px)] rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex items-center justify-between border-b border-[var(--border-token)] pb-3">
-                      <div className="flex items-center gap-2">
-                        <BellRing size={16} className="text-[var(--ink)]" />
-                        <h3 className="font-bold text-[14px] text-[var(--ink)]">
-                          Live Resident Activity
-                        </h3>
-                      </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-foreground)]">
-                        Realtime Stream
-                      </span>
-                    </div>
+              {/* Notification Center: Responsive Mobile Bottom Sheet & Desktop Dropdown */}
+              <AnimatePresence>
+                {notificationsOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs"
+                      onClick={() => setNotificationsOpen(false)}
+                      aria-hidden="true"
+                    />
 
-                    <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0 mt-0.5">
-                        <FileText size={16} className="text-[var(--resolved)]" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-bold text-[var(--ink)] leading-tight">
-                          {todayReportsCount} new reports registered today
-                        </p>
-                        <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
-                          {totalReportsCount} aggregate complaints organized into unified tickets.
-                        </p>
-                      </div>
-                    </div>
+                    {/* Notification Panel */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 16, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                      className="fixed inset-x-3 bottom-3 top-auto sm:top-12 sm:bottom-auto sm:right-0 sm:left-auto sm:w-[390px] sm:absolute z-50 rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 sm:p-5 flex flex-col gap-3 max-h-[85vh] sm:max-h-[520px] overflow-hidden"
+                    >
+                      {/* Mobile Drag Indicator Bar */}
+                      <div className="w-10 h-1 rounded-full bg-[var(--border-token)] mx-auto -mt-1 mb-1 sm:hidden shrink-0" />
 
-                    <div className="flex flex-col gap-1.5 max-h-[250px] overflow-y-auto pr-1">
-                      {clusters.slice(0, 5).map((cl) => (
-                        <div
-                          key={cl.id}
-                          onClick={() => { setSelectedId(cl.id); setNotificationsOpen(false); }}
-                          className="p-2.5 rounded-xl border border-[var(--border-token)] hover:bg-[var(--surface-2)] cursor-pointer transition-colors flex items-center justify-between gap-2"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <span className="text-[12px] font-bold text-[var(--ink)] truncate">
-                                {cl.title}
-                              </span>
-                              <UrgencyChip level={cl.urgency as UrgencyLevel} />
+                      {/* Header */}
+                      <div className="flex items-center justify-between border-b border-[var(--border-token)] pb-3 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--ink)] shadow-xs">
+                            <BellRing size={16} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="font-bold text-[14px] text-[var(--ink)] leading-none">
+                                Resident Activity
+                              </h3>
+                              <span className="w-2 h-2 rounded-full bg-[var(--resolved)] animate-pulse" />
                             </div>
-                            <p className="text-[11px] text-[var(--muted-foreground)]">
-                              {cl.complaint_count} report{cl.complaint_count !== 1 ? "s" : ""} · {cl.flats.slice(0, 3).join(", ")} · {formatTimeAgo(cl.created_at)}
+                            <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                              Live complaint &amp; triage stream
                             </p>
                           </div>
-                          <ChevronRight size={14} className="text-[var(--muted-foreground)] shrink-0" />
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="border-t border-[var(--border-token)] pt-2 flex items-center justify-between">
-                      <span className="text-[11px] text-[var(--muted-foreground)]">
-                        Click to inspect details
-                      </span>
-                      <button
-                        onClick={() => setNotificationsOpen(false)}
-                        className="text-[12px] font-semibold text-[var(--ink)] hover:underline cursor-pointer"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+                        <div className="flex items-center gap-1.5">
+                          <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-foreground)]">
+                            Realtime
+                          </span>
+                          <button
+                            onClick={() => setNotificationsOpen(false)}
+                            aria-label="Close notification panel"
+                            className="w-8 h-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--ink)] transition-colors cursor-pointer"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Summary Banner */}
+                      <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-start gap-3 shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-[var(--resolved-tint)] border border-[var(--resolved)]/40 flex items-center justify-center shrink-0 mt-0.5 text-[var(--resolved)]">
+                          <FileText size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-bold text-[var(--ink)] leading-tight">
+                            {todayReportsCount} new reports registered today
+                          </p>
+                          <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
+                            {totalReportsCount} total complaints consolidated into active tickets.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Scrollable Notification List */}
+                      <div className="flex flex-col gap-2 overflow-y-auto max-h-[48vh] sm:max-h-[250px] pr-0.5 overscroll-contain">
+                        {clusters.length === 0 ? (
+                          <div className="py-8 text-center text-[12px] text-[var(--muted-foreground)]">
+                            No active notifications
+                          </div>
+                        ) : (
+                          clusters.slice(0, 8).map((cl) => (
+                            <div
+                              key={cl.id}
+                              onClick={() => {
+                                setSelectedId(cl.id);
+                                setNotificationsOpen(false);
+                              }}
+                              className="p-3 rounded-xl border border-[var(--border-token)] hover:bg-[var(--surface-2)] active:scale-[0.99] cursor-pointer transition-all flex items-center justify-between gap-2.5 bg-[var(--surface)] group"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                  <span className="text-[13px] font-bold text-[var(--ink)] truncate max-w-[190px] sm:max-w-[210px]">
+                                    {cl.title}
+                                  </span>
+                                  <UrgencyChip level={cl.urgency as UrgencyLevel} />
+                                </div>
+                                <p className="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-semibold text-[var(--ink)]">{cl.complaint_count} report{cl.complaint_count !== 1 ? "s" : ""}</span>
+                                  <span>·</span>
+                                  <span className="truncate">{cl.flats.slice(0, 3).join(", ")}{cl.flats.length > 3 ? ` +${cl.flats.length - 3}` : ""}</span>
+                                  <span>·</span>
+                                  <span>{formatTimeAgo(cl.created_at)}</span>
+                                </p>
+                              </div>
+                              <ChevronRight size={15} className="text-[var(--muted-foreground)] group-hover:text-[var(--ink)] shrink-0 transition-colors" />
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Footer Controls */}
+                      <div className="border-t border-[var(--border-token)] pt-2.5 flex items-center justify-between text-[12px] shrink-0">
+                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                          Tap any ticket to inspect
+                        </span>
+                        <button
+                          onClick={() => setNotificationsOpen(false)}
+                          className="font-bold text-[12px] text-[var(--ink)] hover:underline cursor-pointer py-1 px-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
