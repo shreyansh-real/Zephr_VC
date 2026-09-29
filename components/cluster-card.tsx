@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, type MutableRefObject } from "react";
 import { UrgencyChip, CategoryChip, UrgencyBar, type UrgencyLevel, type CategoryType } from "./urgency";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight, UserCircle } from "lucide-react";
 
 interface Cluster {
   id: string;
@@ -28,55 +28,18 @@ function formatAge(cluster: Cluster): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function CountNumeral({ count, variant, hasCountedRef }: { count: number; variant: "focus" | "row"; hasCountedRef: MutableRefObject<boolean> }) {
-  const [displayed, setDisplayed] = useState(count);
-  const initialized = useRef(false);
+const STATUS_STYLES: Record<string, string> = {
+  New: "bg-[var(--medium-tint)] text-[var(--medium)] border-[var(--medium)]",
+  Assigned: "bg-[var(--high-tint)] text-[var(--high)] border-[var(--high)]",
+  "In Progress": "bg-[var(--low-tint)] text-[var(--low)] border-[var(--low)]",
+  Resolved: "bg-[var(--resolved-tint)] text-[var(--resolved)] border-[var(--resolved)]",
+};
 
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    if (hasCountedRef.current) {
-      setDisplayed(count);
-      return;
-    }
-
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
-      hasCountedRef.current = true;
-      setDisplayed(count);
-      return;
-    }
-
-    setDisplayed(0);
-    const duration = 600;
-    const startTime = performance.now();
-    let rafId: number;
-
-    const step = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-      const next = Math.floor(eased * count);
-      setDisplayed(next);
-      if (progress < 1) {
-        rafId = requestAnimationFrame(step);
-      } else {
-        hasCountedRef.current = true;
-        setDisplayed(count);
-      }
-    };
-    rafId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+function StatusPill({ status }: { status: string }) {
+  const style = STATUS_STYLES[status] ?? "bg-[var(--surface-2)] text-[var(--ink)] border-[var(--border-token)]";
   return (
-    <span
-      className={variant === "focus" ? "count-numeral-focus" : "count-numeral"}
-      style={{ fontVariantNumeric: "tabular-nums" }}
-      aria-label={`${count} reports`}
-    >
-      {displayed}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[13px] font-semibold leading-none h-6 whitespace-nowrap ${style}`}>
+      {status}
     </span>
   );
 }
@@ -91,19 +54,21 @@ interface ClusterCardProps {
   hasCountedRef: MutableRefObject<boolean>;
 }
 
-export function ClusterCard({ cluster, variant, onClick, onUpdate, hasCountedRef }: ClusterCardProps) {
+export function ClusterCard({ cluster, onClick, onUpdate }: ClusterCardProps) {
   const isCritical = cluster.urgency === "Critical";
-  const maxFlats = 3;
-  const shownFlats = cluster.flats.slice(0, maxFlats);
-  const extraFlats = cluster.flats.length - maxFlats;
+  const shownFlats = cluster.flats.slice(0, 3);
+  const extraFlats = cluster.flats.length - 3;
+  const [saving, setSaving] = useState(false);
 
   async function handleStatusChange(e: React.MouseEvent, status: string) {
     e.stopPropagation();
+    setSaving(true);
     await fetch(`/api/clusters/${cluster.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    setSaving(false);
     onUpdate();
   }
 
@@ -119,92 +84,97 @@ export function ClusterCard({ cluster, variant, onClick, onUpdate, hasCountedRef
 
   return (
     <article
-      className={`relative flex rounded-[12px] border overflow-hidden cursor-pointer transition-all hover:border-[var(--border-strong)] focus-within:ring-2 focus-within:ring-[var(--border-strong)] ${
-        isCritical
-          ? "border-[var(--critical)] bg-[var(--critical-tint)]"
-          : "border-[var(--border-token)] bg-[var(--surface)]"
-      }`}
+      className={`group relative flex items-stretch rounded-xl border overflow-hidden cursor-pointer
+        transition-all duration-150
+        hover:shadow-md hover:border-[var(--border-strong)]
+        focus-within:ring-2 focus-within:ring-[var(--border-strong)]
+        ${isCritical ? "border-[var(--critical)] bg-[var(--critical-tint)]" : "border-[var(--border-token)] bg-[var(--surface)]"}
+        ${saving ? "opacity-60 pointer-events-none" : ""}
+      `}
       onClick={onClick}
     >
+      {/* Urgency bar */}
       <UrgencyBar level={cluster.urgency as UrgencyLevel} />
 
-      <div className="flex gap-4 p-4 flex-1 min-w-0">
-        {/* Count */}
-        <div className="flex flex-col items-center justify-start min-w-[72px] flex-shrink-0">
-          <CountNumeral count={cluster.complaint_count} variant={variant} hasCountedRef={hasCountedRef} />
-          <span className="text-[15px] font-bold text-[var(--muted-foreground)] mt-0.5">
-            {cluster.complaint_count === 1 ? "report" : "reports"}
-          </span>
-        </div>
+      <div className="flex flex-1 min-w-0 flex-col md:grid md:grid-cols-[2fr_1fr_1fr_1fr_160px] md:items-center gap-2 md:gap-4 px-4 py-3.5">
 
-        {/* Content */}
-        <div className="flex flex-col gap-2 min-w-0 flex-1">
-          <h3 className="font-display font-bold text-[22px] leading-[1.25] tracking-[-0.01em] text-[var(--ink)] truncate">
-            {cluster.title}
-          </h3>
-
-          <div className="flex flex-wrap gap-2 items-center">
-            <UrgencyChip level={cluster.urgency as UrgencyLevel} />
-            <CategoryChip category={cluster.category as CategoryType} />
+        {/* Col 1: Title + meta */}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <h3 className="font-semibold text-[15px] text-[var(--ink)] leading-snug truncate max-w-[400px]">
+              {cluster.title}
+            </h3>
             {cluster.needs_review && (
-              <span className="inline-flex items-center gap-1 text-[14px] font-bold" style={{ color: "var(--review)" }}>
-                <Eye size={14} /> Check this: AI is unsure
+              <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--review)] shrink-0">
+                <Eye size={12} /> Review
               </span>
             )}
             {cluster.escalated && (
-              <span className="text-[14px] font-bold text-[var(--high)]">Escalated</span>
+              <span className="text-[12px] font-semibold text-[var(--high)] shrink-0">↑ Escalated</span>
             )}
           </div>
-
-          <div className="text-[15px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <p className="text-[13px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <span className="font-semibold text-[var(--ink)]">{cluster.complaint_count}</span>
+            {" "}report{cluster.complaint_count !== 1 ? "s" : ""} ·{" "}
             {shownFlats.join(", ")}
             {extraFlats > 0 && ` +${extraFlats}`}
             {" · "}
             {formatAge(cluster)}
-            {cluster.assignee && ` · ${cluster.assignee}`}
-          </div>
+          </p>
+        </div>
 
-          {/* Controls */}
-          <div className="flex flex-wrap gap-2 items-center mt-1" onClick={(e) => e.stopPropagation()}>
-            <span className="text-[15px] font-bold text-[var(--muted-foreground)]">{cluster.status}</span>
-            {cluster.status !== "Resolved" && (
-              <>
-                {(cluster.status === "New" || cluster.status === "Assigned") && (
-                  <button
-                    onClick={(e) => handleStatusChange(e, "In Progress")}
-                    className="h-8 px-3 rounded-lg text-[14px] font-bold border-[1.5px] border-[var(--ink)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
-                  >
-                    Start
-                  </button>
-                )}
-                <button
-                  onClick={(e) => handleStatusChange(e, "Resolved")}
-                  className="h-8 px-3 rounded-lg text-[14px] font-bold border-[1.5px] border-[var(--resolved)] text-[var(--resolved)] bg-transparent hover:bg-[var(--resolved-tint)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
-                >
-                  Resolve
-                </button>
-              </>
-            )}
-            {cluster.status === "Resolved" && (
-              <button
-                onClick={(e) => handleStatusChange(e, "In Progress")}
-                className="h-8 px-3 rounded-lg text-[14px] font-bold border-[1.5px] border-[var(--ink)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
-              >
-                Reopen
-              </button>
-            )}
+        {/* Col 2: Category */}
+        <div className="flex items-center">
+          <CategoryChip category={cluster.category as CategoryType} />
+        </div>
+
+        {/* Col 3: Urgency */}
+        <div className="flex items-center">
+          <UrgencyChip level={cluster.urgency as UrgencyLevel} />
+        </div>
+
+        {/* Col 4: Status */}
+        <div className="flex items-center">
+          <StatusPill status={cluster.status} />
+        </div>
+
+        {/* Col 5: Assignee + quick actions */}
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="relative flex items-center">
+            <UserCircle size={14} className="absolute left-2 text-[var(--muted-foreground)] pointer-events-none" />
             <select
               value={cluster.assignee ?? ""}
               onChange={handleAssignee}
-              className="h-8 px-2 rounded-lg border-[1.5px] border-[var(--border-token)] bg-[var(--surface)] text-[14px] font-bold text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer"
-              aria-label="Assign to volunteer"
-              onClick={(e) => e.stopPropagation()}
+              className="h-8 pl-7 pr-2 rounded-lg border border-[var(--border-token)] bg-[var(--surface)] text-[13px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer max-w-[120px] truncate"
+              aria-label="Assign to"
             >
               <option value="">Unassigned</option>
-              {VOLUNTEERS.map((v) => <option key={v} value={v}>{v}</option>)}
+              {VOLUNTEERS.map((v) => <option key={v} value={v}>{v.split(" ")[0]}</option>)}
             </select>
           </div>
+
+          {cluster.status !== "Resolved" ? (
+            <button
+              onClick={(e) => handleStatusChange(e, "Resolved")}
+              className="h-8 px-3 rounded-lg text-[13px] font-semibold border border-[var(--resolved)] text-[var(--resolved)] hover:bg-[var(--resolved-tint)] transition-colors focus:outline-none shrink-0"
+            >
+              Resolve
+            </button>
+          ) : (
+            <button
+              onClick={(e) => handleStatusChange(e, "In Progress")}
+              className="h-8 px-3 rounded-lg text-[13px] font-semibold border border-[var(--border-token)] text-[var(--muted-foreground)] hover:border-[var(--ink)] hover:text-[var(--ink)] transition-colors focus:outline-none shrink-0"
+            >
+              Reopen
+            </button>
+          )}
         </div>
+
+      </div>
+
+      {/* Open detail chevron */}
+      <div className="flex items-center pr-3 text-[var(--muted-foreground)] group-hover:text-[var(--ink)] transition-colors">
+        <ChevronRight size={16} />
       </div>
     </article>
   );

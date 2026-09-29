@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Eye, Check, RefreshCw } from "lucide-react";
+import { X, Eye, Check, RefreshCw, Send, User, ChevronDown } from "lucide-react";
 import { UrgencyChip, CategoryChip, type UrgencyLevel, type CategoryType } from "./urgency";
 
 interface Complaint {
@@ -43,7 +43,23 @@ const STATUSES = ["New", "Assigned", "In Progress", "Resolved"] as const;
 
 function formatTs(ts: { _seconds: number } | null): string {
   if (!ts) return "";
-  return new Date(ts._seconds * 1000).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", month: "short", day: "numeric" });
+  return new Date(ts._seconds * 1000).toLocaleString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
+        {title}
+      </p>
+      {children}
+    </div>
+  );
 }
 
 interface Props {
@@ -62,8 +78,8 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
   const [sendLoading, setSendLoading] = useState(false);
   const [sentMsg, setSentMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -75,7 +91,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
       const existingDraft = data.complaints.find((c) => c.draft_reply)?.draft_reply ?? "";
       setDraft((prev) => prev || existingDraft);
     } catch {
-      setError("Couldn't load cluster detail.");
+      setError("Couldn't load issue detail.");
     } finally {
       setLoading(false);
     }
@@ -86,11 +102,8 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
     closeRef.current?.focus();
   }, [clusterId, fetchDetail]);
 
-  // Focus trap
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { onClose(); }
-    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
@@ -148,7 +161,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
       });
       if (res.ok) {
         const data = (await res.json()) as { sent_count: number; sent_at: string };
-        setSentMsg(`Reply sent to ${data.sent_count} resident${data.sent_count !== 1 ? "s" : ""}`);
+        setSentMsg(`Sent to ${data.sent_count} resident${data.sent_count !== 1 ? "s" : ""}`);
         onUpdate();
         void fetchDetail();
       }
@@ -157,213 +170,272 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
     }
   }
 
-  const avgConfidence = complaints.length > 0
-    ? complaints.reduce((s, c) => s + c.confidence, 0) / complaints.length
-    : null;
+  const avgConfidence =
+    complaints.length > 0
+      ? complaints.reduce((s, c) => s + c.confidence, 0) / complaints.length
+      : null;
+
+  const isCritical = cluster?.urgency === "Critical";
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
-        style={{ backgroundColor: "rgba(26,26,24,0.4)" }}
+        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Drawer */}
+      {/* Drawer panel */}
       <aside
-        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="drawer-title"
-        className="fixed right-0 top-0 bottom-0 z-50 flex flex-col bg-[var(--surface)] border-l border-[var(--border-token)] overflow-y-auto"
-        style={{ width: "min(480px, 100vw)" }}
+        className="fixed right-0 top-0 bottom-0 z-50 flex flex-col bg-[var(--surface)] border-l border-[var(--border-token)] shadow-2xl overflow-hidden"
+        style={{ width: "min(520px, 100vw)" }}
       >
-        {/* Sticky header */}
-        <div className="sticky top-0 bg-[var(--surface)] border-b border-[var(--border-token)] px-6 py-4 flex items-center justify-between z-10">
+
+        {/* ── Sticky header ── */}
+        <div className={`sticky top-0 z-10 border-b border-[var(--border-token)] px-6 py-4 flex items-start justify-between gap-4
+          ${isCritical ? "bg-[var(--critical-tint)]" : "bg-[var(--surface)]"}`}
+        >
           <div className="flex-1 min-w-0">
-            {cluster && (
-              <h2 id="drawer-title" className="font-display font-bold text-[22px] leading-[1.25] tracking-[-0.01em] text-[var(--ink)] truncate">
-                {cluster.title}
-              </h2>
+            {cluster ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <UrgencyChip level={cluster.urgency as UrgencyLevel} />
+                  <CategoryChip category={cluster.category as CategoryType} />
+                  {cluster.needs_review && (
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--review)]">
+                      <Eye size={12} /> Review
+                    </span>
+                  )}
+                </div>
+                <h2
+                  id="drawer-title"
+                  className="font-display font-bold text-[20px] leading-snug tracking-tight text-[var(--ink)]"
+                >
+                  {cluster.title}
+                </h2>
+                <p className="text-[13px] text-[var(--muted-foreground)] mt-1" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {cluster.complaint_count} report{cluster.complaint_count !== 1 ? "s" : ""} ·{" "}
+                  {cluster.flats.slice(0, 4).join(", ")}
+                  {cluster.flats.length > 4 && ` +${cluster.flats.length - 4} more`}
+                </p>
+              </>
+            ) : (
+              <div className="h-8 w-48 rounded bg-[var(--surface-2)] animate-pulse" />
             )}
           </div>
           <button
             ref={closeRef}
             onClick={onClose}
-            className="ml-3 w-11 h-11 flex items-center justify-center rounded-lg hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] flex-shrink-0"
+            className="mt-0.5 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] shrink-0 text-[var(--muted-foreground)] hover:text-[var(--ink)]"
             aria-label="Close"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 px-6 py-6 flex flex-col gap-6">
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-7">
+
           {loading && (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 rounded-lg bg-[var(--surface-2)] animate-pulse" />
+                <div key={i} className="h-14 rounded-lg bg-[var(--surface-2)] animate-pulse" />
               ))}
             </div>
           )}
 
-          {error && <p className="text-[16px] text-[var(--ink)]">{error}</p>}
+          {error && (
+            <p className="text-[15px] text-[var(--ink)] p-4 rounded-lg bg-[var(--critical-tint)] border border-[var(--critical)]">
+              {error}
+            </p>
+          )}
 
           {!loading && cluster && (
             <>
-              {/* Chips */}
-              <div className="flex flex-wrap gap-2">
-                <UrgencyChip level={cluster.urgency as UrgencyLevel} />
-                <CategoryChip category={cluster.category as CategoryType} />
-                <span className="text-[15px] text-[var(--muted-foreground)] self-center">{cluster.complaint_count} reports</span>
-                {cluster.needs_review && (
-                  <span className="inline-flex items-center gap-1 text-[14px] font-bold self-center" style={{ color: "var(--review)" }}>
-                    <Eye size={14} /> Check this: AI is unsure
-                  </span>
-                )}
-              </div>
-
-              {/* Status stepper */}
-              <div>
-                <p className="text-[15px] font-bold text-[var(--ink)] mb-2">Status</p>
-                <div className="flex gap-1 flex-wrap">
-                  {STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleStatusChange(s)}
-                      disabled={cluster.status === s}
-                      className={`h-9 px-3 rounded-lg text-[14px] font-bold border-[1.5px] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] ${
-                        cluster.status === s
-                          ? s === "Resolved"
-                            ? "bg-[var(--resolved)] border-[var(--resolved)] text-white"
-                            : "bg-[var(--ink)] border-[var(--ink)] text-[var(--ink-inverse)]"
-                          : "bg-transparent border-[var(--border-token)] text-[var(--muted-foreground)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
-                      } disabled:cursor-default`}
-                    >
-                      {cluster.status === s && <Check size={14} className="inline mr-1" />}
-                      {s}
-                    </button>
-                  ))}
+              {/* ── Status ── */}
+              <Section title="Status">
+                <div className="flex gap-1.5 flex-wrap">
+                  {STATUSES.map((s) => {
+                    const active = cluster.status === s;
+                    const isResolved = s === "Resolved";
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => handleStatusChange(s)}
+                        disabled={active}
+                        className={`h-8 px-3 rounded-lg text-[13px] font-semibold border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] disabled:cursor-default
+                          ${active
+                            ? isResolved
+                              ? "bg-[var(--resolved)] border-[var(--resolved)] text-white"
+                              : "bg-[var(--ink)] border-[var(--ink)] text-[var(--ink-inverse)]"
+                            : "bg-transparent border-[var(--border-token)] text-[var(--muted-foreground)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
+                          }`}
+                      >
+                        {active && <Check size={12} className="inline mr-1.5" />}
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
+              </Section>
 
-              {/* Assignee */}
-              <div>
-                <p className="text-[15px] font-bold text-[var(--ink)] mb-2">Assigned to</p>
-                <select
-                  value={cluster.assignee ?? ""}
-                  onChange={(e) => handleAssignee(e.target.value)}
-                  className="h-10 px-3 rounded-lg border-[1.5px] border-[var(--border-token)] bg-[var(--bg)] text-[15px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer"
-                  aria-label="Assign to volunteer"
-                >
-                  <option value="">Unassigned</option>
-                  {VOLUNTEERS.map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
+              {/* ── Assigned to ── */}
+              <Section title="Assigned to">
+                <div className="relative w-fit">
+                  <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] pointer-events-none" />
+                  <select
+                    value={cluster.assignee ?? ""}
+                    onChange={(e) => handleAssignee(e.target.value)}
+                    className="h-9 pl-8 pr-8 rounded-lg border border-[var(--border-token)] bg-[var(--bg)] text-[14px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer appearance-none min-w-[180px]"
+                    aria-label="Assign to volunteer"
+                  >
+                    <option value="">Unassigned</option>
+                    {VOLUNTEERS.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] pointer-events-none" />
+                </div>
+              </Section>
 
-              {/* Why this urgency */}
+              {/* ── AI reasoning ── */}
               {complaints[0] && (
-                <div>
-                  <p className="text-[15px] font-bold text-[var(--ink)] mb-2">Why {cluster.urgency}</p>
-                  <p className="text-[15px] text-[var(--muted-foreground)] mb-3">{complaints[0].reason}</p>
-                  {avgConfidence !== null && (
-                    <div>
-                      <p className="text-[15px] text-[var(--muted-foreground)] mb-1">{Math.round(avgConfidence * 100)}% sure</p>
-                      <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--ink)] rounded-full"
-                          style={{ width: `${Math.round(avgConfidence * 100)}%` }}
-                          role="progressbar"
-                          aria-valuenow={Math.round(avgConfidence * 100)}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label={`${Math.round(avgConfidence * 100)}% confidence`}
-                        />
+                <Section title="Why this urgency">
+                  <div className="p-4 rounded-xl border border-[var(--border-token)] bg-[var(--bg)] flex flex-col gap-3">
+                    <p className="text-[14px] text-[var(--ink)] leading-relaxed">
+                      {complaints[0].reason}
+                    </p>
+
+                    {avgConfidence !== null && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[12px] font-semibold text-[var(--muted-foreground)]">AI confidence</span>
+                          <span className="text-[13px] font-bold text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {Math.round(avgConfidence * 100)}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[var(--surface-2)] overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--ink)] rounded-full transition-all duration-700"
+                            style={{ width: `${Math.round(avgConfidence * 100)}%` }}
+                            role="progressbar"
+                            aria-valuenow={Math.round(avgConfidence * 100)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {cluster.escalated && cluster.escalation_reason && (
-                    <p className="text-[14px] font-bold mt-2" style={{ color: "var(--high)" }}>
-                      ⬆ {cluster.escalation_reason}
-                    </p>
-                  )}
-                  {complaints[0].ai_provider && complaints[0].ai_provider !== "fallback" && (
-                    <p className="text-[13px] text-[var(--muted-foreground)] mt-2">
-                      AI: {complaints[0].ai_provider}
-                    </p>
-                  )}
-                </div>
+                    )}
+
+                    {cluster.escalated && cluster.escalation_reason && (
+                      <p className="text-[13px] font-semibold text-[var(--high)]">
+                        ↑ {cluster.escalation_reason}
+                      </p>
+                    )}
+
+                    {complaints[0].ai_provider && complaints[0].ai_provider !== "fallback" && (
+                      <p className="text-[12px] text-[var(--muted-foreground)]">
+                        Model: {complaints[0].ai_provider}
+                      </p>
+                    )}
+                  </div>
+                </Section>
               )}
 
-              {/* Complaints list */}
-              <div>
-                <p className="text-[15px] font-bold text-[var(--ink)] mb-3">Reports ({complaints.length})</p>
-                <div className="flex flex-col gap-3">
-                  {complaints.map((c) => (
-                    <div
-                      key={c.id}
-                      className="p-4 rounded-lg border border-[var(--border-token)] bg-[var(--bg)]"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[15px] font-bold text-[var(--ink)]">{c.flat_no} — {c.resident_name}</span>
-                        <span className="text-[14px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
-                          {formatTs(c.created_at)}
-                        </span>
-                      </div>
-                      <p className="text-[16px] text-[var(--ink)] mb-2" style={{ lineHeight: 1.6 }}>{c.raw_text}</p>
-                      <p className="text-[14px] text-[var(--muted-foreground)] italic">{c.summary}</p>
-                      {c.reply_sent_at && (
-                        <p className="text-[14px] font-bold mt-2" style={{ color: "var(--resolved)" }}>
-                          <Check size={14} className="inline mr-1" />Reply sent {formatTs(c.reply_sent_at)}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* ── Reports collapsible ── */}
+              <Section title={`Reports (${complaints.length})`}>
+                <button
+                  onClick={() => setReportsOpen((v) => !v)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-[var(--border-token)] bg-[var(--bg)] text-[14px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors focus:outline-none"
+                >
+                  <span>{reportsOpen ? "Hide" : "Show"} individual reports</span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-[var(--muted-foreground)] transition-transform duration-200 ${reportsOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
 
-              {/* Reply panel */}
-              <div className="border-t border-[var(--border-token)] pt-6">
-                <p className="text-[15px] font-bold text-[var(--ink)] mb-3">
-                  Reply to residents
-                  {draftLanguage && (
-                    <span className="ml-2 px-2 py-0.5 rounded-[4px] bg-[var(--surface-2)] text-[14px] text-[var(--muted-foreground)] border border-[var(--border-token)] font-normal">
-                      {draftLanguage}
-                    </span>
-                  )}
-                </p>
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={4}
-                  placeholder="Click 'Generate draft' to create a reply..."
-                  className="w-full min-h-[120px] px-4 py-3 rounded-lg bg-[var(--bg)] border-[1.5px] border-[var(--border-token)] text-[18px] text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-1 resize-y"
-                  style={{ lineHeight: 1.6, maxWidth: "65ch" }}
-                />
-                {sentMsg && (
-                  <p className="text-[15px] font-bold mt-2 flex items-center gap-1.5" style={{ color: "var(--resolved)" }}>
-                    <Check size={16} /> {sentMsg}
-                  </p>
+                {reportsOpen && (
+                  <div className="flex flex-col gap-2">
+                    {complaints.map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-4 rounded-xl border border-[var(--border-token)] bg-[var(--bg)] flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[14px] font-semibold text-[var(--ink)]">
+                            {c.flat_no} — {c.resident_name}
+                          </span>
+                          <span className="text-[12px] text-[var(--muted-foreground)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {formatTs(c.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-[14px] text-[var(--ink)] leading-relaxed">{c.raw_text}</p>
+                        {c.summary && (
+                          <p className="text-[13px] text-[var(--muted-foreground)] italic">{c.summary}</p>
+                        )}
+                        {c.reply_sent_at && (
+                          <p className="text-[13px] font-semibold flex items-center gap-1" style={{ color: "var(--resolved)" }}>
+                            <Check size={13} /> Reply sent {formatTs(c.reply_sent_at)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
-                <div className="flex gap-3 mt-3 flex-wrap">
-                  <button
-                    onClick={handleDraftReply}
-                    disabled={draftLoading}
-                    className="h-10 px-5 rounded-lg font-bold text-[15px] border-[1.5px] border-[var(--ink)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50 flex items-center gap-2"
-                  >
-                    <RefreshCw size={16} className={draftLoading ? "animate-spin" : ""} />
-                    {draftLoading ? "Generating…" : "Generate draft"}
-                  </button>
-                  <button
-                    onClick={handleSendReply}
-                    disabled={!draft.trim() || sendLoading}
-                    className="h-10 px-5 rounded-lg font-bold text-[15px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:translate-y-px transition-all focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {sendLoading ? "Sending…" : `Send to all ${complaints.length}`}
-                  </button>
+              </Section>
+
+              {/* ── Reply panel ── */}
+              <Section title="Reply to residents">
+                <div className="flex flex-col gap-3 p-4 rounded-xl border border-[var(--border-token)] bg-[var(--bg)]">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-[14px] text-[var(--muted-foreground)]">
+                      Draft a message to all {complaints.length} resident{complaints.length !== 1 ? "s" : ""} in this cluster
+                    </p>
+                    {draftLanguage && (
+                      <span className="px-2 py-0.5 rounded bg-[var(--surface-2)] text-[12px] text-[var(--muted-foreground)] border border-[var(--border-token)]">
+                        {draftLanguage}
+                      </span>
+                    )}
+                  </div>
+
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    rows={4}
+                    placeholder="Click 'Generate draft' or type your reply…"
+                    className="w-full min-h-[110px] px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] resize-y placeholder:text-[var(--muted-foreground)]"
+                    style={{ lineHeight: 1.6 }}
+                  />
+
+                  {sentMsg && (
+                    <p className="text-[14px] font-semibold flex items-center gap-1.5" style={{ color: "var(--resolved)" }}>
+                      <Check size={14} /> {sentMsg}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={handleDraftReply}
+                      disabled={draftLoading}
+                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--border-token)] text-[var(--ink)] bg-transparent hover:bg-[var(--surface-2)] transition-colors focus:outline-none disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} className={draftLoading ? "animate-spin" : ""} />
+                      {draftLoading ? "Generating…" : "Generate draft"}
+                    </button>
+                    <button
+                      onClick={handleSendReply}
+                      disabled={!draft.trim() || sendLoading}
+                      className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[14px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.98] transition-all focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Send size={14} />
+                      {sendLoading ? "Sending…" : `Send to ${complaints.length}`}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </Section>
             </>
           )}
         </div>
