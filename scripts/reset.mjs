@@ -1,8 +1,9 @@
 // @ts-check
-import * as admin from "firebase-admin";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 function init() {
-  if (admin.apps.length > 0) return;
+  if (getApps().length > 0) return;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
@@ -10,11 +11,11 @@ function init() {
     console.error("Missing Firebase env vars.");
     process.exit(1);
   }
-  admin.initializeApp({ credential: admin.credential.cert({ projectId, clientEmail, privateKey }) });
+  initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
 }
 
 init();
-const db = admin.firestore();
+const db = getFirestore();
 
 async function deleteCollection(name) {
   const snap = await db.collection(name).get();

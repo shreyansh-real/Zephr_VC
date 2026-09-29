@@ -1,8 +1,9 @@
 // @ts-check
-import * as admin from "firebase-admin";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 function init() {
-  if (admin.apps.length > 0) return;
+  if (getApps().length > 0) return;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
@@ -10,12 +11,12 @@ function init() {
     console.error("Missing Firebase env vars. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.");
     process.exit(1);
   }
-  admin.initializeApp({ credential: admin.credential.cert({ projectId, clientEmail, privateKey }) });
+  initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
 }
 
 init();
-const db = admin.firestore();
-const now = admin.firestore.Timestamp.now();
+const db = getFirestore();
+const now = Timestamp.now();
 
 const URGENCY_RANK = { Critical: 4, High: 3, Medium: 2, Low: 1 };
 
@@ -118,7 +119,7 @@ async function seedData() {
     const flats = [...new Set(cluster.complaints.map((c) => c.flat_no))];
 
     const daysAgo = Math.random() * 3;
-    const createdAt = admin.firestore.Timestamp.fromDate(new Date(Date.now() - daysAgo * 86400 * 1000));
+    const createdAt = Timestamp.fromDate(new Date(Date.now() - daysAgo * 86400 * 1000));
 
     batch.set(clusterRef, {
       title: cluster.title,
@@ -139,7 +140,7 @@ async function seedData() {
 
     for (const complaint of cluster.complaints) {
       const complaintRef = db.collection("complaints").doc();
-      const compCreated = admin.firestore.Timestamp.fromDate(
+      const compCreated = Timestamp.fromDate(
         new Date(Date.now() - (daysAgo + Math.random() * 0.5) * 86400 * 1000)
       );
       batch.set(complaintRef, {
