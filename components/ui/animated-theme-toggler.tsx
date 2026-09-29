@@ -12,7 +12,7 @@ interface AnimatedThemeTogglerProps {
 
 export function AnimatedThemeToggler({
   className,
-  duration = 400,
+  duration = 500,
 }: AnimatedThemeTogglerProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -21,7 +21,7 @@ export function AnimatedThemeToggler({
   async function toggleTheme() {
     const nextTheme = isDark ? "light" : "dark";
 
-    // Fallback for browsers without View Transitions support
+    // No View Transitions support or reduced motion → instant switch
     if (
       !("startViewTransition" in document) ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -30,37 +30,47 @@ export function AnimatedThemeToggler({
       return;
     }
 
-    // Get click origin for the circle expand
+    // Capture button center BEFORE the transition
     const btn = ref.current;
-    const x = btn ? btn.getBoundingClientRect().left + btn.offsetWidth / 2 : window.innerWidth / 2;
-    const y = btn ? btn.getBoundingClientRect().top + btn.offsetHeight / 2 : window.innerHeight / 2;
+    const rect = btn?.getBoundingClientRect();
+    const x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+    const y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
 
-    // Max radius = farthest corner from click point
+    // Largest circle that covers the whole viewport from origin
     const endRadius = Math.hypot(
       Math.max(x, window.innerWidth - x),
       Math.max(y, window.innerHeight - y)
     );
 
-    const clipPath = [
-      `circle(0px at ${x}px ${y}px)`,
-      `circle(${endRadius}px at ${x}px ${y}px)`,
-    ];
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transition = (document as any).startViewTransition(() => {
+    const vt = (document as any).startViewTransition(() => {
+      // Synchronously apply the class so the snapshot of the NEW state
+      // is taken immediately — this is the key fix.
+      const root = document.documentElement;
+      if (nextTheme === "dark") {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+      // Keep next-themes in sync (updates localStorage, context, etc.)
       setTheme(nextTheme);
     });
 
-    await transition.ready;
+    // Wait for both snapshots to be ready
+    await vt.ready;
 
+    // Always: new theme expands outward from button center as a circle
     document.documentElement.animate(
-      { clipPath: isDark ? [...clipPath].reverse() : clipPath },
+      {
+        clipPath: [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`,
+        ],
+      },
       {
         duration,
-        easing: "ease-in-out",
-        pseudoElement: isDark
-          ? "::view-transition-old(root)"
-          : "::view-transition-new(root)",
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)", // snappy ease-out-expo
+        pseudoElement: "::view-transition-new(root)",
       }
     );
   }
@@ -79,7 +89,10 @@ export function AnimatedThemeToggler({
       )}
     >
       <span suppressHydrationWarning className="flex items-center justify-center">
-        {isDark ? <Moon size={20} strokeWidth={2} /> : <Sun size={20} strokeWidth={2} />}
+        {isDark
+          ? <Moon size={20} strokeWidth={2} />
+          : <Sun size={20} strokeWidth={2} />
+        }
       </span>
     </button>
   );
