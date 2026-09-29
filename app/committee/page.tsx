@@ -5,7 +5,8 @@ import { ShieldCheck, Lock, KeyRound } from "lucide-react";
 export default function CommitteePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center pb-28" style={{ backgroundColor: "var(--bg)" }}>
-      <div className="ml-0 md:ml-[90px] w-full flex-1 flex items-center justify-center px-4 py-16">
+      <NavDock />
+      <div className="ml-0 md:ml-[90px] w-full flex-1 flex items-center justify-center px-4 pt-20 md:pt-16 pb-12">
         <main className="w-full max-w-[440px] flex flex-col items-center">
           
           {/* Logo Brand Header */}
@@ -51,7 +52,6 @@ export default function CommitteePage() {
           </p>
         </main>
       </div>
-      <NavDock />
     </div>
   );
 }

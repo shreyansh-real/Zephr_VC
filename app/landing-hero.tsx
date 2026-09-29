@@ -125,7 +125,7 @@ export function LandingHero() {
   ];
 
   return (
-    <BackgroundBeamsWithCollision className="py-8 md:py-14">
+    <BackgroundBeamsWithCollision className="pt-20 pb-8 md:py-14">
       <div className="max-w-[1240px] w-full mx-auto px-4 md:px-8 relative z-10">
 
         {/* Top badge */}

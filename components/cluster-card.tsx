@@ -248,11 +248,11 @@ export function ClusterCard({ cluster, variant = "bento", onClick, onUpdate }: C
       {/* Left urgency accent bar */}
       <UrgencyBar level={cluster.urgency as UrgencyLevel} />
 
-      {/* Main grid */}
-      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-6 items-center flex-1 min-w-0 px-4 py-3.5">
+      {/* Main grid / responsive flex */}
+      <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_auto_auto] gap-2.5 sm:gap-x-6 sm:items-center flex-1 min-w-0 px-4 py-3 sm:py-3.5">
         {/* Zone 1 – Issue title + meta */}
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 min-w-0 flex-wrap">
             <h3 className={`font-semibold text-[15px] leading-tight truncate ${isResolved ? "text-[var(--muted-foreground)]" : "text-[var(--ink)]"}`}>
               {cluster.title}
             </h3>
@@ -284,42 +284,45 @@ export function ClusterCard({ cluster, variant = "bento", onClick, onUpdate }: C
           </div>
         </div>
 
-        {/* Zone 2 – Urgency chip */}
-        <div className="w-24 flex justify-center">
-          <UrgencyChip level={cluster.urgency as UrgencyLevel} />
-        </div>
+        {/* Mobile action strip / Desktop Zones 2, 3, 4 */}
+        <div className="flex items-center justify-between sm:contents pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--border-token)]">
+          {/* Zone 2 – Urgency chip */}
+          <div className="sm:w-24 flex justify-start sm:justify-center">
+            <UrgencyChip level={cluster.urgency as UrgencyLevel} />
+          </div>
 
-        {/* Zone 3 – Status dot + label */}
-        <div className="w-24 flex items-center justify-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[cluster.status] ?? "bg-[var(--border-token)]"}`} />
-          <span className={`text-[13px] font-semibold whitespace-nowrap ${STATUS_LABEL[cluster.status] ?? "text-[var(--muted-foreground)]"}`}>
-            {cluster.status}
-          </span>
-        </div>
+          {/* Zone 3 – Status dot + label */}
+          <div className="sm:w-24 flex items-center justify-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[cluster.status] ?? "bg-[var(--border-token)]"}`} />
+            <span className={`text-[12px] sm:text-[13px] font-semibold whitespace-nowrap ${STATUS_LABEL[cluster.status] ?? "text-[var(--muted-foreground)]"}`}>
+              {cluster.status}
+            </span>
+          </div>
 
-        {/* Zone 4 – Quick action button */}
-        <div className="w-28 flex justify-end" onClick={(e) => e.stopPropagation()}>
-          {!isResolved ? (
-            <button
-              onClick={(e) => quickStatus(e, "Resolved")}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold
-                border border-[var(--resolved)] text-[var(--resolved)]
-                hover:bg-[var(--resolved-tint)] transition-colors focus:outline-none cursor-pointer"
-            >
-              <CheckCheck size={13} />
-              Resolve
-            </button>
-          ) : (
-            <button
-              onClick={(e) => quickStatus(e, "In Progress")}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold
-                border border-[var(--border-token)] text-[var(--muted-foreground)]
-                hover:border-[var(--ink)] hover:text-[var(--ink)] transition-colors focus:outline-none cursor-pointer"
-            >
-              <RotateCcw size={12} />
-              Reopen
-            </button>
-          )}
+          {/* Zone 4 – Quick action button */}
+          <div className="sm:w-28 flex justify-end" onClick={(e) => e.stopPropagation()}>
+            {!isResolved ? (
+              <button
+                onClick={(e) => quickStatus(e, "Resolved")}
+                className="inline-flex items-center gap-1.5 h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-[12px] sm:text-[13px] font-semibold
+                  border border-[var(--resolved)] text-[var(--resolved)]
+                  hover:bg-[var(--resolved-tint)] transition-colors focus:outline-none cursor-pointer"
+              >
+                <CheckCheck size={13} />
+                Resolve
+              </button>
+            ) : (
+              <button
+                onClick={(e) => quickStatus(e, "In Progress")}
+                className="inline-flex items-center gap-1.5 h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg text-[12px] sm:text-[13px] font-semibold
+                  border border-[var(--border-token)] text-[var(--muted-foreground)]
+                  hover:border-[var(--ink)] hover:text-[var(--ink)] transition-colors focus:outline-none cursor-pointer"
+              >
+                <RotateCcw size={12} />
+                Reopen
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

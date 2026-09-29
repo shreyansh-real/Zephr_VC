@@ -229,7 +229,7 @@ export function DashboardClient() {
       <div className="ml-0 md:ml-[90px] min-h-screen flex flex-col">
 
         {/* ── Top Header Bar ── */}
-        <header className="sticky top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 flex-wrap">
+        <header className="sticky top-14 md:top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl p-0.5 bg-[var(--surface-2)] border border-[var(--border-token)] overflow-hidden shrink-0 shadow-xs">
               <img src="/favicon.svg" alt="Sochi" className="w-full h-full object-cover rounded-lg" />
@@ -287,7 +287,7 @@ export function DashboardClient() {
               {notificationsOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
-                  <div className="absolute right-0 top-11 z-50 w-[340px] sm:w-[380px] rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 top-11 z-50 w-[320px] sm:w-[380px] max-w-[calc(100vw-24px)] rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="flex items-center justify-between border-b border-[var(--border-token)] pb-3">
                       <div className="flex items-center gap-2">
                         <BellRing size={16} className="text-[var(--ink)]" />

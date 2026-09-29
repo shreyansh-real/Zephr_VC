@@ -5,8 +5,9 @@ import { ShieldCheck, Sparkles, Layers, CheckCircle2, Clock, MailCheck } from "l
 export default function ReportPage() {
   return (
     <div className="min-h-screen pb-28" style={{ backgroundColor: "var(--bg)" }}>
+      <NavDock />
       <div className="ml-0 md:ml-[90px] transition-all">
-        <main className="max-w-[880px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <main className="max-w-[880px] mx-auto px-4 sm:px-6 lg:px-8 pt-18 md:pt-12 pb-8">
           
           {/* Top Stage Header - Minimal & Direct */}
           <div className="text-center mb-6 sm:mb-8">
@@ -14,7 +15,7 @@ export default function ReportPage() {
               <span className="w-2 h-2 rounded-full bg-[var(--resolved)] animate-pulse" />
               Resident Rapid Resolution Portal
             </div>
-            <h1 className="font-display font-black text-[32px] sm:text-[40px] md:text-[46px] leading-[1.08] tracking-[-0.03em] text-[var(--ink)]">
+            <h1 className="font-display font-black text-[30px] sm:text-[40px] md:text-[46px] leading-[1.08] tracking-[-0.03em] text-[var(--ink)]">
               Submit a Maintenance Report
             </h1>
             <p className="text-[14px] sm:text-[15px] text-[var(--muted-foreground)] mt-2.5 max-w-[560px] mx-auto leading-relaxed">
@@ -74,7 +75,7 @@ export default function ReportPage() {
             </div>
 
             {/* Trust & Confidentiality Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-6 pt-5 border-t border-[var(--border-token)]/60 text-[12px] text-[var(--muted-foreground)] font-medium">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 pt-5 border-t border-[var(--border-token)]/60 text-[12px] text-[var(--muted-foreground)] font-medium">
               <span className="inline-flex items-center gap-1.5">
                 <ShieldCheck size={15} className="text-[var(--resolved)]" /> Strict Resident Privacy
               </span>
@@ -89,7 +90,6 @@ export default function ReportPage() {
 
         </main>
       </div>
-      <NavDock />
     </div>
   );
 }
