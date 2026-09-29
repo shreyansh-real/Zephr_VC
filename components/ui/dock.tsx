@@ -18,8 +18,8 @@ interface DockContextValue {
   iconDistance: number;
 }
 
-const DEFAULT_SIZE = 40;
-const DEFAULT_MAGNIFICATION = 64;
+const DEFAULT_SIZE = 46;
+const DEFAULT_MAGNIFICATION = 70;
 const DEFAULT_DISTANCE = 140;
 
 export const DockContext = React.createContext<DockContextValue>({
@@ -62,13 +62,9 @@ export function Dock({
         onMouseMove={(e) => mouseX.set(e.pageX)}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={cn(
-          /* layout */
-          "flex h-[58px] gap-1 px-3 items-center rounded-2xl",
-          /* glass surface — adapts to light/dark via CSS vars */
+          "flex h-[66px] gap-1.5 px-4 items-center rounded-2xl",
           "bg-[var(--surface)]/75 backdrop-blur-2xl",
-          /* border subtly visible in both modes */
           "border border-[var(--border-token)]",
-          /* multi-layer shadow for depth */
           "shadow-[0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.10),0_1px_0px_rgba(255,255,255,0.06)_inset]",
           "dark:shadow-[0_2px_4px_rgba(0,0,0,0.3),0_8px_32px_rgba(0,0,0,0.5),0_1px_0px_rgba(255,255,255,0.04)_inset]",
           alignmentClass,
@@ -94,7 +90,6 @@ export function DockIcon({ className, children }: DockIconProps) {
   const { mouseX, iconSize, iconMagnification, iconDistance } =
     React.useContext(DockContext);
 
-  // Distance from mouse center → interpolated target size
   const distanceFromMouse = useTransform(mouseX, (val) => {
     const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
     return val - bounds.x - bounds.width / 2;
@@ -106,18 +101,16 @@ export function DockIcon({ className, children }: DockIconProps) {
     [iconSize, iconMagnification, iconSize]
   );
 
-  // Silky-smooth spring — slow settle, no bounce
   const size = useSpring(sizeTarget, {
     mass: 0.15,
     stiffness: 100,
     damping: 18,
   });
 
-  // Vertical lift: icon floats up toward mouse
   const yTarget = useTransform(
     distanceFromMouse,
     [-iconDistance, 0, iconDistance],
-    [0, -6, 0]
+    [0, -8, 0]
   );
   const y = useSpring(yTarget, {
     mass: 0.15,
@@ -132,12 +125,10 @@ export function DockIcon({ className, children }: DockIconProps) {
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       className={cn(
-        "relative flex aspect-square items-center justify-center rounded-full",
-        "will-change-transform",
+        "relative flex aspect-square items-center justify-center rounded-full will-change-transform",
         className
       )}
     >
-      {/* Inner scale pulse on hover for extra polish */}
       <motion.div
         className="flex items-center justify-center w-full h-full"
         animate={{ scale: hovered ? 1.08 : 1 }}

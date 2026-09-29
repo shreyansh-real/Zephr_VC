@@ -2,17 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import {
   Home,
   FileText,
   ShieldCheck,
   LayoutDashboard,
-  Sun,
-  Moon,
   Lock,
 } from "lucide-react";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { cn } from "@/lib/utils";
 import { Dock, DockIcon } from "@/components/ui/dock";
 import { Separator } from "@/components/ui/separator";
@@ -102,31 +100,14 @@ function DockLink({
 }
 
 function ThemeDockItem() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <DockButton
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          suppressHydrationWarning
-        >
-          <motion.span
-            suppressHydrationWarning
-            key={isDark ? "moon" : "sun"}
-            initial={{ rotate: -30, opacity: 0, scale: 0.7 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            exit={{ rotate: 30, opacity: 0, scale: 0.7 }}
-            transition={{ type: "spring", mass: 0.2, stiffness: 200, damping: 16 }}
-            className="flex items-center justify-center"
-          >
-            {isDark ? <Moon size={18} /> : <Sun size={18} />}
-          </motion.span>
-        </DockButton>
+        <div className="flex items-center justify-center w-full h-full">
+          <AnimatedThemeToggler duration={450} />
+        </div>
       </TooltipTrigger>
-      <TooltipContent>{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
+      <TooltipContent>Toggle theme</TooltipContent>
     </Tooltip>
   );
 }
@@ -145,9 +126,9 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
       <TooltipProvider>
         <Dock
           direction="middle"
-          iconSize={38}
-          iconMagnification={58}
-          iconDistance={130}
+          iconSize={44}
+          iconMagnification={66}
+          iconDistance={135}
         >
           {/* ── Brand wordmark ── */}
           <Tooltip>
