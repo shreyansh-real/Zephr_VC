@@ -17,18 +17,18 @@ All tokens are CSS custom properties defined in `app/globals.css`. No hardcoded 
 
 | Token | Value | Role |
 |---|---|---|
-| `--bg` | `#FEFAE0` | Page background |
+| `--bg` | `#F5EFE3` | Page background |
 | `--surface` | `#FFFFFF` | Cards, inputs, drawers |
-| `--surface-2` | `#F4EFC8` | Hovered/active surfaces, table stripes |
+| `--surface-2` | `#ECE4D2` | Hovered/active surfaces, table stripes |
 | `--ink` | `#262624` | Primary text, icons, borders-strong |
-| `--ink-inverse` | `#FEFAE0` | Text on filled-ink buttons |
-| `--muted` | `#5E5A48` | Secondary text, meta, labels |
-| `--border-token` | `#DAD3A6` | Default borders, dividers |
+| `--ink-inverse` | `#F5EFE3` | Text on filled-ink buttons |
+| `--muted` | `#5C5849` | Secondary text, meta, labels |
+| `--border-token` | `#D8CFBB` | Default borders, dividers |
 | `--border-strong` | `#262624` | Focus rings, emphasized borders |
 
-**Contrast (WCAG, against `--bg` `#FEFAE0`):**
-- `--ink` `#262624` → **14.3:1** (AAA ✓)
-- `--muted` `#5E5A48` → **6.4:1** (AA ✓, near-AAA)
+**Contrast (WCAG, against `--bg` `#F5EFE3`):**
+- `--ink` `#262624` → **13.5:1** (AAA ✓)
+- `--muted` `#5C5849` → **6.2:1** (AA ✓)
 
 ### 2.2 Dark Mode (`.dark`)
 
@@ -37,15 +37,15 @@ All tokens are CSS custom properties defined in `app/globals.css`. No hardcoded 
 | `--bg` | `#1C1C1A` | Page background |
 | `--surface` | `#262624` | Cards, inputs, drawers |
 | `--surface-2` | `#302F2C` | Hovered/active surfaces |
-| `--ink` | `#FEFAE0` | Primary text, icons |
+| `--ink` | `#F5EFE3` | Primary text, icons |
 | `--ink-inverse` | `#1C1C1A` | Text on filled-ink buttons |
 | `--muted` | `#B0AB98` | Secondary text, meta, labels |
 | `--border-token` | `#3F3D38` | Default borders, dividers |
-| `--border-strong` | `#FEFAE0` | Focus rings, emphasized borders |
+| `--border-strong` | `#F5EFE3` | Focus rings, emphasized borders |
 
 **Contrast (WCAG, against `--bg` `#1C1C1A`):**
-- `--ink` `#FEFAE0` → **17.0:1** (AAA ✓)
-- `--muted` `#B0AB98` → **8.1:1** (AAA ✓)
+- `--ink` `#F5EFE3` → **16.5:1** (AAA ✓)
+- `--muted` `#B0AB98` → **7.9:1** (AAA ✓)
 
 ---
 

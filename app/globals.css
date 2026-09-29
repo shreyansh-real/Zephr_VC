@@ -6,13 +6,13 @@
 
 /* Sochi design tokens */
 :root {
-  --bg: #FEFAE0;
+  --bg: #F5EFE3;
   --surface: #FFFFFF;
-  --surface-2: #F4EFC8;
+  --surface-2: #ECE4D2;
   --ink: #262624;
-  --ink-inverse: #FEFAE0;
-  --muted: #5E5A48;
-  --border-token: #DAD3A6;
+  --ink-inverse: #F5EFE3;
+  --muted: #5C5849;
+  --border-token: #D8CFBB;
   --border-strong: #262624;
 
   --critical: #d62f1f;
@@ -28,23 +28,23 @@
   --review: #8a6a00;
 
   /* Map to shadcn/tailwind system */
-  --background: #FEFAE0;
+  --background: #F5EFE3;
   --foreground: #262624;
   --card: #FFFFFF;
   --card-foreground: #262624;
   --popover: #FFFFFF;
   --popover-foreground: #262624;
   --primary: #262624;
-  --primary-foreground: #FEFAE0;
-  --secondary: #F4EFC8;
+  --primary-foreground: #F5EFE3;
+  --secondary: #ECE4D2;
   --secondary-foreground: #262624;
-  --muted: #F4EFC8;
-  --muted-foreground: #5E5A48;
-  --accent: #F4EFC8;
+  --muted: #ECE4D2;
+  --muted-foreground: #5C5849;
+  --accent: #ECE4D2;
   --accent-foreground: #262624;
   --destructive: #d62f1f;
-  --border: #DAD3A6;
-  --input: #DAD3A6;
+  --border: #D8CFBB;
+  --input: #D8CFBB;
   --ring: #262624;
   --radius: 0.5rem;
 }
@@ -53,11 +53,11 @@
   --bg: #1C1C1A;
   --surface: #262624;
   --surface-2: #302F2C;
-  --ink: #FEFAE0;
+  --ink: #F5EFE3;
   --ink-inverse: #1C1C1A;
   --muted: #B0AB98;
   --border-token: #3F3D38;
-  --border-strong: #FEFAE0;
+  --border-strong: #F5EFE3;
 
   --critical: #ff5a48;
   --critical-tint: #3a1712;
@@ -72,23 +72,23 @@
   --review: #e6c25c;
 
   --background: #1C1C1A;
-  --foreground: #FEFAE0;
+  --foreground: #F5EFE3;
   --card: #262624;
-  --card-foreground: #FEFAE0;
+  --card-foreground: #F5EFE3;
   --popover: #262624;
-  --popover-foreground: #FEFAE0;
-  --primary: #FEFAE0;
+  --popover-foreground: #F5EFE3;
+  --primary: #F5EFE3;
   --primary-foreground: #1C1C1A;
   --secondary: #302F2C;
-  --secondary-foreground: #FEFAE0;
+  --secondary-foreground: #F5EFE3;
   --muted: #302F2C;
   --muted-foreground: #B0AB98;
   --accent: #302F2C;
-  --accent-foreground: #FEFAE0;
+  --accent-foreground: #F5EFE3;
   --destructive: #ff5a48;
   --border: #3F3D38;
   --input: #3F3D38;
-  --ring: #FEFAE0;
+  --ring: #F5EFE3;
 }
 
 @theme inline {
