@@ -163,11 +163,11 @@ export function LandingHero() {
             </Link>
 
             <Link
-              href="/committee"
+              href="/dashboard"
               className="inline-flex items-center justify-center gap-2.5 h-13 px-7 rounded-xl font-bold text-[16px] border-2 border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] hover:border-[var(--ink)] hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)] shadow-sm"
             >
               <ShieldCheck className="w-4 h-4 text-[var(--ink)]" />
-              <span>Committee dashboard</span>
+              <span>Management dashboard</span>
             </Link>
           </div>
 
@@ -328,7 +328,7 @@ export function LandingHero() {
                   Dispatched to {currentTab.complaintCount} residents
                 </span>
                 <Link
-                  href="/committee"
+                  href="/dashboard"
                   className="inline-flex items-center gap-1 text-[13px] font-bold text-[var(--ink)] hover:underline"
                 >
                   <span>Dashboard</span>

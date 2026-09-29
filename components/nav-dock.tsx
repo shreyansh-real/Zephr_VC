@@ -34,7 +34,6 @@ interface NavDockProps {
 const NAV_ITEMS = [
   { href: "/", icon: Home, label: "Home", desc: "Society triage & overview" },
   { href: "/report", icon: FileText, label: "Report Issue", desc: "Submit maintenance complaint" },
-  { href: "/committee", icon: ShieldCheck, label: "Committee Portal", desc: "RWA volunteer authorization" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Management Dashboard", desc: "Live tickets & AI clustering" },
 ];
 
