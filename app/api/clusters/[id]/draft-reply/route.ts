@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase-admin";
 import { requirePasscode } from "@/lib/auth";
-import { draftReply } from "@/lib/anthropic";
+import { draftReply } from "@/lib/ai";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -35,18 +35,13 @@ export async function POST(_req: Request, { params }: Params) {
 
   const residentNames = complaints.map((c) => c.resident_name as string).filter(Boolean);
 
-  let draft: string;
-  try {
-    draft = await draftReply({
-      clusterTitle: cluster.title as string,
-      category: cluster.category as string,
-      status: cluster.status as string,
-      language,
-      residentNames,
-    });
-  } catch {
-    draft = `Dear residents, we have received your complaint about "${cluster.title as string}" and are looking into it. We will update you shortly. Thank you for your patience.`;
-  }
+  const { draft, ai_provider } = await draftReply({
+    clusterTitle: cluster.title as string,
+    category: cluster.category as string,
+    status: cluster.status as string,
+    language,
+    residentNames,
+  });
 
-  return NextResponse.json({ draft, language });
+  return NextResponse.json({ draft, language, ai_provider });
 }

@@ -1,6 +1,5 @@
 // @ts-check
 import * as admin from "firebase-admin";
-import { readFileSync } from "fs";
 
 function init() {
   if (admin.apps.length > 0) return;
@@ -17,7 +16,6 @@ function init() {
 init();
 const db = admin.firestore();
 const now = admin.firestore.Timestamp.now();
-const sv = admin.firestore.FieldValue.serverTimestamp();
 
 const URGENCY_RANK = { Critical: 4, High: 3, Medium: 2, Low: 1 };
 
@@ -158,6 +156,7 @@ async function seedData() {
         needs_review: complaint.confidence < 0.7,
         draft_reply: null,
         reply_sent_at: null,
+        ai_provider: "seed",
         created_at: compCreated,
       });
     }

@@ -7,7 +7,7 @@ An AI-powered inbox that reads, ranks, groups, and answers housing society compl
 - Next.js 16 App Router + TypeScript (strict)
 - Tailwind CSS + shadcn/ui
 - Firebase Firestore (Admin SDK on server, client SDK for realtime)
-- Anthropic Claude (server-side only)
+- Gemini (Google), Groq, and OpenRouter (fallback chain, server-side only)
 - Zod validation
 - next-themes (light/dark)
 - Deployed on Vercel
@@ -30,8 +30,10 @@ cp .env.example .env.local
 ```
 
 Required:
-- `ANTHROPIC_API_KEY` — Anthropic API key
-- `ANTHROPIC_MODEL` — e.g. `claude-sonnet-4-5` (default if unset)
+- `GEMINI_API_KEY` + `GEMINI_MODEL` — Gemini (primary AI provider)
+- `GROQ_API_KEY` + `GROQ_MODEL` — Groq (fallback 1)
+- `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` — OpenRouter (fallback 2)
+- At least one AI provider key is required. The chain falls through on timeout or error.
 - `COMMITTEE_PASSCODE` — shared passcode for the committee dashboard
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` — Firebase Admin SDK (from service account JSON). Store `FIREBASE_PRIVATE_KEY` with literal `\n` for line breaks.
 
@@ -60,13 +62,19 @@ Optional (for realtime dashboard updates):
 4. Create a **Service Account** key (Project Settings → Service Accounts → Generate new private key)
 5. Set the three `FIREBASE_*` env vars from the JSON key file
 
-### 4. Seed demo data
+### Test AI providers
+
+```bash
+npm run test:ai
+```
+
+Sends one Hinglish sample to each configured provider and prints PASS/FAIL with latency and parsed JSON.
+
+### Seed demo data
 
 ```bash
 npm run seed
 ```
-
-To reset and reseed:
 ```bash
 npm run reset && npm run seed
 ```

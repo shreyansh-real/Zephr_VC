@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb, FieldValue, Timestamp } from "@/lib/firebase-admin";
 import { ComplaintInputSchema, URGENCY_RANK } from "@/lib/schemas";
-import { triageComplaint } from "@/lib/anthropic";
+import { triageComplaint } from "@/lib/ai";
 
 // Simple in-memory rate limiter: 10 req/min per IP
 const rateMap = new Map<string, { count: number; reset: number }>();
@@ -139,6 +139,7 @@ export async function POST(req: Request) {
     needs_review: needsReview,
     draft_reply: null,
     reply_sent_at: null,
+    ai_provider: triage.ai_provider,
     created_at: now,
   });
 

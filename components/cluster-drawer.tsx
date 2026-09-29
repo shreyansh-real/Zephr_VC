@@ -16,6 +16,7 @@ interface Complaint {
   confidence: number;
   reason: string;
   needs_review: boolean;
+  ai_provider: string | null;
   draft_reply: string | null;
   reply_sent_at: { _seconds: number } | null;
   created_at: { _seconds: number } | null;
@@ -105,9 +106,6 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
       const data = (await res.json()) as { cluster: ClusterData };
       setCluster(data.cluster);
       onUpdate();
-      if (status === "Resolved") {
-        void handleDraftReply();
-      }
     }
   }
 
@@ -130,7 +128,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
     try {
       const res = await fetch(`/api/clusters/${clusterId}/draft-reply`, { method: "POST" });
       if (res.ok) {
-        const data = (await res.json()) as { draft: string; language: string };
+        const data = (await res.json()) as { draft: string; language: string; ai_provider: string };
         setDraft(data.draft);
         setDraftLanguage(data.language);
       }
@@ -288,6 +286,11 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                   {cluster.escalated && cluster.escalation_reason && (
                     <p className="text-[14px] font-bold mt-2" style={{ color: "var(--high)" }}>
                       ⬆ {cluster.escalation_reason}
+                    </p>
+                  )}
+                  {complaints[0].ai_provider && complaints[0].ai_provider !== "fallback" && (
+                    <p className="text-[13px] text-[var(--muted-foreground)] mt-2">
+                      AI: {complaints[0].ai_provider}
                     </p>
                   )}
                 </div>

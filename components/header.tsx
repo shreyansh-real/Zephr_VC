@@ -32,7 +32,7 @@ export function Header({ showLock = false, showLive = false }: HeaderProps) {
         </Link>
         <div className="flex items-center gap-2">
           {showLive && (
-            <span className="flex items-center gap-1.5 text-[15px] font-bold text-[var(--muted)]">
+            <span className="flex items-center gap-1.5 text-[15px] font-bold text-[var(--muted-foreground)]">
               <span className="w-2 h-2 rounded-full bg-[var(--low)] animate-pulse" aria-hidden="true" />
               Live
             </span>
@@ -41,7 +41,7 @@ export function Header({ showLock = false, showLive = false }: HeaderProps) {
           {showLock && (
             <button
               onClick={handleLock}
-              className="flex items-center gap-1.5 h-11 px-3 rounded-lg hover:bg-[var(--surface-2)] transition-colors text-[15px] font-bold text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
+              className="flex items-center gap-1.5 h-11 px-3 rounded-lg hover:bg-[var(--surface-2)] transition-colors text-[15px] font-bold text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
               aria-label="Lock dashboard"
             >
               <Lock size={18} />
