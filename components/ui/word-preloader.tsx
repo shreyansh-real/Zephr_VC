@@ -8,16 +8,9 @@ const BEZIER_EASE = [0.76, 0, 0.24, 1] as const;
 const WORD_EASE = [0.33, 1, 0.68, 1] as const;
 
 export const PRELOADER_WORDS = [
-  { word: "Hello", lang: "English" },
-  { word: "Bonjour", lang: "French" },
-  { word: "नमस्ते", lang: "Hindi" },
-  { word: "Ciao", lang: "Italian" },
-  { word: "Olà", lang: "Portuguese" },
-  { word: "やあ", lang: "Japanese" },
-  { word: "Guten Tag", lang: "German" },
-  { word: "Hola", lang: "Spanish" },
-  { word: "Nǐ hǎo", lang: "Mandarin" },
-  { word: "Sochi", lang: "Society AI" },
+  "hello",
+  "bonjour",
+  "namaste",
 ];
 
 interface WordPreloaderProps {
@@ -25,14 +18,14 @@ interface WordPreloaderProps {
   duration?: number;
 }
 
-export function WordPreloader({ onComplete, duration = 2400 }: WordPreloaderProps) {
+export function WordPreloader({ onComplete, duration = 1200 }: WordPreloaderProps) {
   const [index, setIndex] = useState(0);
   const [dimension, setDimension] = useState({ width: 0, height: 0 });
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
 
-  // Determine dark vs light mode
-  const [isDark, setIsDark] = useState(true);
+  // Color theme matching website's warm palette
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -63,56 +56,59 @@ export function WordPreloader({ onComplete, duration = 2400 }: WordPreloaderProp
     }
   }, [resolvedTheme, isClient]);
 
-  // Word cycling interval
+  // Faster word cycling
   useEffect(() => {
     if (index === PRELOADER_WORDS.length - 1) return;
 
+    const wordInterval = Math.max(280, Math.floor(duration / PRELOADER_WORDS.length));
     const timeout = setTimeout(() => {
       setIndex((prev) => prev + 1);
-    }, Math.max(160, Math.floor(duration / PRELOADER_WORDS.length)));
+    }, wordInterval);
 
     return () => clearTimeout(timeout);
   }, [index, duration]);
 
-  // SVG curved path calculations (Dennis Snellenberg curve)
-  const initialPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${
+  // Downward slide towards bottom border of website with top curve
+  const initialCurve = `M0 300 Q${dimension.width / 2} 300 ${dimension.width} 300 L${dimension.width} ${
     dimension.height + 300
-  } 0 ${dimension.height} L0 0`;
+  } L0 ${dimension.height + 300} Z`;
 
-  const targetPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${
-    dimension.height
-  } 0 ${dimension.height} L0 0`;
+  const targetCurve = `M0 300 Q${dimension.width / 2} 0 ${dimension.width} 300 L${dimension.width} ${
+    dimension.height + 300
+  } L0 ${dimension.height + 300} Z`;
 
+  // Curtain slides DOWN to bottom border of the screen (+100vh)
   const containerVariants: Variants = {
     initial: {
       top: 0,
     },
     exit: {
-      top: "-100vh",
+      top: "100vh",
       transition: {
-        duration: 0.85,
+        duration: 0.7,
         ease: BEZIER_EASE,
-        delay: 0.2,
+        delay: 0.15,
       },
     },
   };
 
   const curveVariants: Variants = {
     initial: {
-      d: initialPath,
-      transition: { duration: 0.7, ease: BEZIER_EASE },
+      d: initialCurve,
+      transition: { duration: 0.6, ease: BEZIER_EASE },
     },
     exit: {
-      d: targetPath,
-      transition: { duration: 0.7, ease: BEZIER_EASE, delay: 0.2 },
+      d: targetCurve,
+      transition: { duration: 0.6, ease: BEZIER_EASE },
     },
   };
 
   const currentWord = PRELOADER_WORDS[index] ?? PRELOADER_WORDS[0];
-  const bgFill = isDark ? "#000000" : "#f8f9fa";
-  const textColor = isDark ? "text-[#fafafa]" : "text-[#09090b]";
-  const subTextColor = isDark ? "text-neutral-400" : "text-neutral-500";
-  const dotColor = isDark ? "bg-emerald-400" : "bg-emerald-500";
+  
+  // Exact website warm off-white (#F5EFE3 in light, #151514 in dark)
+  const bgFill = isDark ? "#151514" : "#F5EFE3";
+  const textColor = isDark ? "text-[#F7F3E9]" : "text-[#1A1A18]";
+  const dotColor = isDark ? "bg-[#C2BDAF]" : "bg-[#524E40]";
 
   return (
     <motion.div
@@ -133,63 +129,9 @@ export function WordPreloader({ onComplete, duration = 2400 }: WordPreloaderProp
     >
       {dimension.width > 0 && (
         <>
-          {/* Main animated word container */}
-          <div className="relative z-10 flex flex-col items-center justify-center gap-3 px-6 text-center">
-            {/* Ambient status dot + language tag */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="flex items-center gap-2"
-            >
-              <span className={`h-2 w-2 rounded-full ${dotColor} animate-pulse`} />
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={currentWord.lang}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 0.8, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.2 }}
-                  className={`text-[12px] font-mono uppercase tracking-[0.25em] ${subTextColor}`}
-                >
-                  {currentWord.lang}
-                </motion.span>
-              </AnimatePresence>
-            </motion.div>
-
-            {/* Typography word reveal */}
-            <div className="h-20 sm:h-24 md:h-28 flex items-center justify-center overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.h1
-                  key={currentWord.word}
-                  initial={{ opacity: 0, y: 35, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -35, filter: "blur(4px)" }}
-                  transition={{
-                    duration: 0.28,
-                    ease: WORD_EASE,
-                  }}
-                  className={`text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-extrabold tracking-tight ${textColor}`}
-                >
-                  {currentWord.word}
-                </motion.h1>
-              </AnimatePresence>
-            </div>
-
-            {/* Bottom subtle progress line */}
-            <div className="w-24 sm:w-32 h-[2px] rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden mt-4">
-              <motion.div
-                className={`h-full ${isDark ? "bg-white" : "bg-black"}`}
-                initial={{ width: "0%" }}
-                animate={{ width: `${((index + 1) / PRELOADER_WORDS.length) * 100}%` }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-
-          {/* Dennis Snellenberg curved SVG bottom flap */}
+          {/* Top curve SVG creating the downward sweep effect */}
           <svg
-            className="absolute top-0 pointer-events-none w-full"
+            className="absolute -top-[300px] pointer-events-none w-full"
             style={{ height: "calc(100% + 300px)" }}
           >
             <motion.path
@@ -199,6 +141,43 @@ export function WordPreloader({ onComplete, duration = 2400 }: WordPreloaderProp
               fill={bgFill}
             />
           </svg>
+
+          {/* Center words display */}
+          <div className="relative z-10 flex flex-col items-center justify-center gap-4 px-6 text-center">
+            {/* Word reveal with center-to-bottom exit flow */}
+            <div className="h-24 sm:h-28 md:h-32 flex items-center justify-center overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentWord}
+                  initial={{ opacity: 0, y: 25, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 25, scale: 0.97 }}
+                  transition={{
+                    duration: 0.22,
+                    ease: WORD_EASE,
+                  }}
+                  className="flex items-center gap-3"
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${dotColor} opacity-70`} />
+                  <h1
+                    className={`text-5xl sm:text-7xl md:text-8xl font-display font-bold tracking-tight lowercase ${textColor}`}
+                  >
+                    {currentWord}
+                  </h1>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Clean minimal indicator line */}
+            <div className="w-16 sm:w-24 h-[2px] rounded-full bg-[var(--border-token)] overflow-hidden">
+              <motion.div
+                className={`h-full ${isDark ? "bg-[#F7F3E9]" : "bg-[#1A1A18]"}`}
+                initial={{ width: "0%" }}
+                animate={{ width: `${((index + 1) / PRELOADER_WORDS.length) * 100}%` }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              />
+            </div>
+          </div>
         </>
       )}
     </motion.div>

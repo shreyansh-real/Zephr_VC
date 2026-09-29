@@ -12,7 +12,7 @@ export function HomeView() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowPreloader(false);
-    }, 2400);
+    }, 1350);
 
     return () => clearTimeout(timer);
   }, []);
@@ -23,16 +23,16 @@ export function HomeView() {
         {showPreloader && (
           <WordPreloader
             key="word-preloader"
-            duration={2300}
+            duration={1100}
             onComplete={() => setShowPreloader(false)}
           />
         )}
       </AnimatePresence>
 
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.25, 1, 0.5, 1] }}
+        transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
       >
         <LandingHero />
         <NavDock />
