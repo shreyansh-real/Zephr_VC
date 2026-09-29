@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Eye, Check, RefreshCw, Send, User, ChevronDown } from "lucide-react";
+import { X, Eye, Check, RefreshCw, Send, User, ChevronDown, Zap, AlertCircle } from "lucide-react";
 import { UrgencyChip, CategoryChip, type UrgencyLevel, type CategoryType } from "./urgency";
+
+const LIVE_SEND_ENABLED = process.env.NEXT_PUBLIC_SEND_LIVE_WHATSAPP === "true";
 
 interface Complaint {
   id: string;
@@ -20,7 +22,15 @@ interface Complaint {
   draft_reply: string | null;
   reply_sent_at: { _seconds: number } | null;
   created_at: { _seconds: number } | null;
+  /** E.164 phone stored at complaint creation — only present when resident opted in */
+  phone?: string;
 }
+
+type LiveSendState =
+  | { status: "idle" }
+  | { status: "sending" }
+  | { status: "sent"; maskedPhone: string }
+  | { status: "error" };
 
 interface ClusterData {
   id: string;
@@ -79,6 +89,8 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
   const [sentMsg, setSentMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportsOpen, setReportsOpen] = useState(false);
+  /** Per-complaint live-send state, keyed by complaint id */
+  const [liveState, setLiveState] = useState<Record<string, LiveSendState>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const fetchDetail = useCallback(async () => {
@@ -167,6 +179,31 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
       }
     } finally {
       setSendLoading(false);
+    }
+  }
+
+  async function handleSendLive(complaintId: string) {
+    if (!draft.trim()) return;
+    setLiveState((prev) => ({ ...prev, [complaintId]: { status: "sending" } }));
+    try {
+      const res = await fetch(`/api/clusters/${clusterId}/send-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complaintId, message: draft }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { masked_phone: string };
+        setLiveState((prev) => ({
+          ...prev,
+          [complaintId]: { status: "sent", maskedPhone: data.masked_phone },
+        }));
+        onUpdate();
+        void fetchDetail();
+      } else {
+        setLiveState((prev) => ({ ...prev, [complaintId]: { status: "error" } }));
+      }
+    } catch {
+      setLiveState((prev) => ({ ...prev, [complaintId]: { status: "error" } }));
     }
   }
 
@@ -416,6 +453,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                     </p>
                   )}
 
+                  {/* Top action row: Generate draft + Send on WhatsApp (wa.me, always available) */}
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={handleDraftReply}
@@ -431,9 +469,59 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
                       className="inline-flex items-center gap-2 h-9 px-4 rounded-lg font-semibold text-[14px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.98] transition-all focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Send size={14} />
-                      {sendLoading ? "Sending…" : `Send to ${complaints.length}`}
+                      {sendLoading ? "Sending…" : `Send on WhatsApp`}
                     </button>
                   </div>
+
+                  {/* Per-complaint "Send automatically" — only when flag is on and complaint has a phone */}
+                  {LIVE_SEND_ENABLED && draft.trim() && (
+                    <div className="flex flex-col gap-2 pt-1 border-t border-[var(--border-token)]">
+                      <p className="text-[12px] text-[var(--muted-foreground)]">
+                        Send automatically (Twilio sandbox — recipient must have joined first)
+                      </p>
+                      {complaints.map((c) => {
+                        if (!c.phone) return null;
+                        const ls: LiveSendState = liveState[c.id] ?? { status: "idle" };
+                        return (
+                          <div key={c.id} className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[13px] text-[var(--ink)] font-semibold shrink-0">
+                                {c.flat_no} — {c.resident_name}
+                              </span>
+                              {ls.status === "idle" && (
+                                <button
+                                  onClick={() => void handleSendLive(c.id)}
+                                  disabled={ls.status !== "idle"}
+                                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold
+                                    border border-[var(--low)] text-[var(--low)]
+                                    hover:bg-[var(--low-tint)] transition-colors focus:outline-none"
+                                >
+                                  <Zap size={12} />
+                                  Send automatically
+                                </button>
+                              )}
+                              {ls.status === "sending" && (
+                                <span className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted-foreground)]">
+                                  <RefreshCw size={12} className="animate-spin" /> Sending…
+                                </span>
+                              )}
+                              {ls.status === "sent" && (
+                                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--resolved)" }}>
+                                  <Check size={13} /> Sent to {ls.maskedPhone}
+                                </span>
+                              )}
+                              {ls.status === "error" && (
+                                <span className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted-foreground)]">
+                                  <AlertCircle size={13} className="text-[var(--high)]" />
+                                  Couldn&apos;t send automatically. Use Send on WhatsApp instead.
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </Section>
             </>

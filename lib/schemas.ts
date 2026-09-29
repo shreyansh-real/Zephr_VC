@@ -51,3 +51,10 @@ export const SendReplySchema = z.object({
 });
 
 export type SendReply = z.infer<typeof SendReplySchema>;
+
+export const SendLiveSchema = z.object({
+  complaintId: z.string().min(1, "complaintId is required"),
+  message: z.string().min(1, "message cannot be empty"),
+});
+
+export type SendLive = z.infer<typeof SendLiveSchema>;
