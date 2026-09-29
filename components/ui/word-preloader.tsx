@@ -31,8 +31,8 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
 
-  // Theme matching website's warm palette
-  const [isDark, setIsDark] = useState(false);
+  // Inverted contrast: In light mode, preloader is dark; in dark mode, preloader is light
+  const [preloaderIsDark, setPreloaderIsDark] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
@@ -54,13 +54,11 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
 
   useEffect(() => {
     if (!isClient) return;
-    if (resolvedTheme === "dark") {
-      setIsDark(true);
-    } else if (resolvedTheme === "light") {
-      setIsDark(false);
-    } else {
-      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    }
+    const isSystemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const activeDark = resolvedTheme === "dark" || (resolvedTheme === "system" && isSystemDark);
+
+    // Invert: If app is dark -> preloader is light. If app is light -> preloader is dark.
+    setPreloaderIsDark(!activeDark);
   }, [resolvedTheme, isClient]);
 
   // Multilingual word progression
@@ -110,10 +108,10 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
 
   const currentWord = PRELOADER_WORDS[index] ?? PRELOADER_WORDS[0];
 
-  // Website warm palette (#F5EFE3 in light, #151514 in dark)
-  const bgFill = isDark ? "#151514" : "#F5EFE3";
-  const textColor = isDark ? "text-[#F7F3E9]" : "text-[#1A1A18]";
-  const dotColor = isDark ? "bg-[#C2BDAF]" : "bg-[#524E40]";
+  // Inverted contrast palette
+  const bgFill = preloaderIsDark ? "#151514" : "#F5EFE3";
+  const textColor = preloaderIsDark ? "text-[#F7F3E9]" : "text-[#1A1A18]";
+  const dotColor = preloaderIsDark ? "bg-[#C2BDAF]" : "bg-[#524E40]";
 
   return (
     <motion.div
@@ -165,10 +163,10 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
               key={wName}
               className={`h-1.5 rounded-full transition-all duration-200 ${
                 i === index
-                  ? isDark
+                  ? preloaderIsDark
                     ? "w-6 bg-[#F7F3E9]"
                     : "w-6 bg-[#1A1A18]"
-                  : isDark
+                  : preloaderIsDark
                   ? "w-1.5 bg-[#3D3B36]"
                   : "w-1.5 bg-[#D8CFBB]"
               }`}
