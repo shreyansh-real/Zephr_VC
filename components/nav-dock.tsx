@@ -134,16 +134,21 @@ export function NavDock({ showLock = false, showLive = false }: NavDockProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.div
-                whileHover={{ opacity: 0.7 }}
+                whileHover={{ opacity: 0.8, scale: 1.05 }}
                 whileTap={{ scale: 0.94 }}
                 transition={{ type: "spring", mass: 0.15, stiffness: 250, damping: 20 }}
+                className="flex items-center justify-center"
               >
                 <Link
                   href="/"
                   aria-label="Sochi home"
-                  className="flex items-center justify-center font-display font-black text-[15px] tracking-tight text-[var(--ink)] focus:outline-none"
+                  className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-[var(--border-token)] focus:outline-none bg-[var(--surface-2)] shadow-sm"
                 >
-                  S
+                  <img
+                    src="/logo.png"
+                    alt="Sochi"
+                    className="w-full h-full object-cover"
+                  />
                 </Link>
               </motion.div>
             </TooltipTrigger>

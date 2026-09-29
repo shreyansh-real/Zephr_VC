@@ -26,6 +26,10 @@ const deva = Noto_Sans_Devanagari({
 export const metadata: Metadata = {
   title: "Sochi — Society Complaint Triage",
   description: "An inbox that reads, ranks, groups and answers society complaints.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

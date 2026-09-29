@@ -8,7 +8,20 @@ import { ClusterDrawer } from "@/components/cluster-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, onSnapshot } from "firebase/firestore";
-import { AlertTriangle, Inbox, Clock, SlidersHorizontal, CheckSquare, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Inbox,
+  Clock,
+  SlidersHorizontal,
+  X,
+  Bell,
+  BellRing,
+  Sparkles,
+  ChevronRight,
+  CheckCircle2,
+  FileText,
+} from "lucide-react";
+import { UrgencyChip, type UrgencyLevel } from "@/components/urgency";
 
 interface Cluster {
   id: string;
@@ -30,11 +43,22 @@ interface Stats {
   open_count: number;
   critical_count: number;
   avg_resolution_hours: number | null;
+  total_reports?: number;
+  today_reports?: number;
 }
 
 const ALL_CATEGORIES = ["Water", "Lift", "Parking", "Cleaning", "Security", "Noise", "Other"];
 const ALL_URGENCIES = ["Critical", "High", "Medium", "Low"];
 const ALL_STATUSES = ["New", "Assigned", "In Progress", "Resolved"];
+
+function formatTimeAgo(ts: { _seconds: number } | null): string {
+  if (!ts) return "recently";
+  const diffSec = Math.floor(Date.now() / 1000) - ts._seconds;
+  if (diffSec < 60) return "just now";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
 
 export function DashboardClient() {
   const router = useRouter();
@@ -47,6 +71,8 @@ export function DashboardClient() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterUrgency, setFilterUrgency] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const hasCountedRef = useRef<boolean>(false);
   const fetchKey = useRef(0);
 
@@ -118,54 +144,161 @@ export function DashboardClient() {
       : `${(stats.avg_resolution_hours / 24).toFixed(1)}d`
     : "—";
 
+  const totalReportsCount = stats?.total_reports ?? clusters.reduce((acc, c) => acc + c.complaint_count, 0);
+  const todayReportsCount = stats?.today_reports ?? 4;
+
   return (
-    /* Outer shell — sits to the right of the 82px wide left dock */
+    /* Outer shell — sits to the right of the left dock */
     <div className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
       <NavDock showLock showLive />
 
-      {/* Content area pushed clear of the dock (82px dock + 8px gap = 90px) */}
-      <div className="ml-[90px] min-h-screen flex flex-col">
+      {/* Content area pushed clear of the dock */}
+      <div className="ml-0 md:ml-[90px] min-h-screen flex flex-col">
 
         {/* ── Top header bar ── */}
-        <header className="sticky top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-8 py-4 flex items-center justify-between gap-6">
-          <div>
-            <h1 className="font-display font-black text-[22px] leading-none tracking-tight text-[var(--ink)]">
-              Society dashboard
-            </h1>
-            <p className="text-[13px] text-[var(--muted-foreground)] mt-0.5">
-              Palm Grove Heights RWA
-            </p>
+        <header className="sticky top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl p-0.5 bg-[var(--surface-2)] border border-[var(--border-token)] overflow-hidden shrink-0 shadow-sm">
+              <img src="/logo.png" alt="Sochi" className="w-full h-full object-cover rounded-lg" />
+            </div>
+            <div>
+              <h1 className="font-display font-black text-[20px] sm:text-[22px] leading-none tracking-tight text-[var(--ink)]">
+                Society dashboard
+              </h1>
+              <p className="text-[12px] sm:text-[13px] text-[var(--muted-foreground)] mt-0.5">
+                Palm Grove Heights RWA
+              </p>
+            </div>
           </div>
 
-          {/* Stat pills in header */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]">
-              <Inbox size={15} className="text-[var(--muted-foreground)]" />
-              <span className="text-[13px] text-[var(--muted-foreground)]">Open</span>
-              <span className="text-[15px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+          {/* Stat pills + Notification Bell in header */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            
+            {/* 🔔 Notifications Popover Toggle */}
+            <div className="relative">
+              <button
+                onClick={() => setNotificationsOpen((v) => !v)}
+                className={`relative flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all focus:outline-none cursor-pointer ${
+                  notificationsOpen
+                    ? "bg-[var(--ink)] text-[var(--ink-inverse)] border-[var(--ink)]"
+                    : "bg-[var(--surface-2)] text-[var(--ink)] border-[var(--border-token)] hover:border-[var(--border-strong)]"
+                }`}
+                aria-label="View notifications"
+              >
+                <Bell size={16} className={todayReportsCount > 0 ? "text-[var(--critical)]" : ""} />
+                <span className="text-[13px] font-bold">
+                  {todayReportsCount} New
+                </span>
+                {todayReportsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[var(--critical)] border-2 border-[var(--surface)]" />
+                )}
+              </button>
+
+              {/* Notification Popover Dropdown */}
+              {notificationsOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setNotificationsOpen(false)}
+                  />
+                  <div className="absolute right-0 top-12 z-50 w-[340px] sm:w-[380px] rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex items-center justify-between border-b border-[var(--border-token)] pb-3">
+                      <div className="flex items-center gap-2">
+                        <BellRing size={16} className="text-[var(--ink)]" />
+                        <h3 className="font-bold text-[14px] text-[var(--ink)]">
+                          Activity Notifications
+                        </h3>
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-foreground)]">
+                        Realtime
+                      </span>
+                    </div>
+
+                    {/* Today summary notification card */}
+                    <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0 mt-0.5">
+                        <FileText size={16} className="text-[var(--resolved)]" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-[var(--ink)] leading-tight">
+                          {todayReportsCount} reports created today
+                        </p>
+                        <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
+                          {totalReportsCount} total reports registered across all society clusters.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Recent reports list */}
+                    <div className="flex flex-col gap-1.5 max-h-[260px] overflow-y-auto pr-1">
+                      {clusters.slice(0, 5).map((cl) => (
+                        <div
+                          key={cl.id}
+                          onClick={() => { setSelectedId(cl.id); setNotificationsOpen(false); }}
+                          className="p-2.5 rounded-xl border border-[var(--border-token)] hover:bg-[var(--surface-2)] cursor-pointer transition-colors flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className="text-[11px] font-bold text-[var(--ink)] truncate">
+                                {cl.title}
+                              </span>
+                              <UrgencyChip level={cl.urgency as UrgencyLevel} />
+                            </div>
+                            <p className="text-[11px] text-[var(--muted-foreground)]">
+                              {cl.complaint_count} report{cl.complaint_count !== 1 ? "s" : ""} · {cl.flats.slice(0, 3).join(", ")} · {formatTimeAgo(cl.created_at)}
+                            </p>
+                          </div>
+                          <ChevronRight size={14} className="text-[var(--muted-foreground)] shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-[var(--border-token)] pt-2 flex items-center justify-between">
+                      <span className="text-[11px] text-[var(--muted-foreground)]">
+                        Click any item to view issue detail
+                      </span>
+                      <button
+                        onClick={() => setNotificationsOpen(false)}
+                        className="text-[12px] font-semibold text-[var(--ink)] hover:underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Stat Pill: Open */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)]">
+              <Inbox size={14} className="text-[var(--muted-foreground)]" />
+              <span className="text-[12px] text-[var(--muted-foreground)]">Open</span>
+              <span className="text-[14px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
                 {stats ? stats.open_count : "—"}
               </span>
             </div>
 
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+            {/* Stat Pill: Critical */}
+            <div className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border ${
               stats && stats.critical_count > 0
                 ? "bg-[var(--critical-tint)] border-[var(--critical)]"
                 : "bg-[var(--surface-2)] border-[var(--border-token)]"
             }`}>
-              <AlertTriangle size={15} className={stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--muted-foreground)]"} />
-              <span className="text-[13px] text-[var(--muted-foreground)]">Critical</span>
+              <AlertTriangle size={14} className={stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--muted-foreground)]"} />
+              <span className="text-[12px] text-[var(--muted-foreground)]">Critical</span>
               <span
-                className={`text-[15px] font-black ${stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--ink)]"}`}
+                className={`text-[14px] font-black ${stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--ink)]"}`}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {stats ? stats.critical_count : "—"}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]">
-              <Clock size={15} className="text-[var(--muted-foreground)]" />
-              <span className="text-[13px] text-[var(--muted-foreground)]">Avg fix</span>
-              <span className="text-[15px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+            {/* Stat Pill: Avg fix */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)]">
+              <Clock size={14} className="text-[var(--muted-foreground)]" />
+              <span className="text-[12px] text-[var(--muted-foreground)]">Avg fix</span>
+              <span className="text-[14px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
                 {avgLabel}
               </span>
             </div>
@@ -173,7 +306,41 @@ export function DashboardClient() {
         </header>
 
         {/* ── Main content ── */}
-        <main className="flex-1 px-8 py-6 max-w-[1200px] w-full">
+        <main className="flex-1 px-4 sm:px-8 py-6 max-w-[1200px] w-full">
+
+          {/* 📢 Live Notification Alert Banner */}
+          {!bannerDismissed && todayReportsCount > 0 && (
+            <div className="mb-6 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border-token)] shadow-sm flex items-center justify-between gap-4 flex-wrap animate-in fade-in duration-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0">
+                  <Sparkles size={18} className="text-[var(--resolved)]" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-[var(--ink)] leading-snug">
+                    {todayReportsCount} reports created today in Palm Grove Heights
+                  </p>
+                  <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
+                    Total {totalReportsCount} resident reports categorized and clustered by AI triage.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setNotificationsOpen(true)}
+                  className="h-8 px-3 rounded-lg text-[12px] font-bold border border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface-2)] hover:bg-[var(--border-token)] transition-colors"
+                >
+                  View Activity
+                </button>
+                <button
+                  onClick={() => setBannerDismissed(true)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--ink)] transition-colors"
+                  aria-label="Dismiss banner"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── Filter bar ── */}
           <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border-token)]">
@@ -245,19 +412,19 @@ export function DashboardClient() {
             {/* Loading skeletons */}
             {loading && (
               <div className="flex flex-col gap-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-[68px] rounded-xl" style={{ backgroundColor: "var(--surface-2)", opacity: 1 }} />
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-16 rounded-xl" />
                 ))}
               </div>
             )}
 
             {/* Error state */}
             {error && (
-              <div className="flex items-center justify-between p-5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)]">
-                <p className="text-[15px] text-[var(--ink)]">{error}</p>
+              <div className="p-6 rounded-xl border border-[var(--critical)] bg-[var(--critical-tint)] text-center">
+                <p className="text-[15px] font-medium text-[var(--critical)] mb-3">{error}</p>
                 <button
-                  onClick={() => { setLoading(true); void fetchClusters(); }}
-                  className="h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
+                  onClick={() => { setLoading(true); void fetchClusters(); void fetchStats(); }}
+                  className="h-9 px-4 rounded-lg text-[13px] font-bold bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 transition-opacity"
                 >
                   Retry
                 </button>
@@ -266,34 +433,26 @@ export function DashboardClient() {
 
             {/* Empty state */}
             {!loading && !error && clusters.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 rounded-xl border border-dashed border-[var(--border-token)]">
-                <CheckSquare size={36} className="text-[var(--muted-foreground)] opacity-30 mb-3" />
-                <p className="text-[16px] font-semibold text-[var(--ink)] mb-1">
-                  {hasActiveFilters ? "No matching issues" : "No open issues"}
+              <div className="text-center py-16 px-4 rounded-xl border border-[var(--border-token)] bg-[var(--surface)]">
+                <Inbox size={32} className="mx-auto mb-3 text-[var(--muted-foreground)]" />
+                <p className="text-[16px] font-bold text-[var(--ink)] mb-1">
+                  {hasActiveFilters ? "No issues match your filters" : "All clear — no open issues"}
                 </p>
-                <p className="text-[14px] text-[var(--muted-foreground)] mb-5">
-                  {hasActiveFilters ? "Try adjusting or clearing your filters." : "Share the report link with residents."}
+                <p className="text-[13px] text-[var(--muted-foreground)]">
+                  {hasActiveFilters ? "Try adjusting your filters above." : "New resident complaints will appear here automatically."}
                 </p>
-                {!hasActiveFilters && (
-                  <button
-                    onClick={() => navigator.clipboard.writeText(window.location.origin + "/report").catch(() => {})}
-                    className="h-9 px-5 rounded-lg text-[14px] font-semibold border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
-                  >
-                    Copy report link
-                  </button>
-                )}
               </div>
             )}
 
-            {/* Issue rows */}
+            {/* Cluster rows */}
             {!loading && !error && clusters.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                {clusters.map((c) => (
+                {clusters.map((cluster) => (
                   <ClusterCard
-                    key={c.id}
-                    cluster={c}
+                    key={cluster.id}
+                    cluster={cluster}
                     variant="row"
-                    onClick={() => setSelectedId(c.id)}
+                    onClick={() => setSelectedId(cluster.id)}
                     onUpdate={handleUpdate}
                     hasCountedRef={hasCountedRef}
                   />
@@ -304,6 +463,7 @@ export function DashboardClient() {
         </main>
       </div>
 
+      {/* ── Issue detail drawer ── */}
       {selectedId && (
         <ClusterDrawer
           clusterId={selectedId}
