@@ -45,7 +45,9 @@ export default function CommitteePage() {
           </div>
 
           <p className="text-[12px] text-[var(--muted-foreground)] mt-6 text-center">
-            Protected with SHA-256 session tokens. Contact society admin for access credentials.
+            Protected with SHA-256 session tokens. Use passcode{" "}
+            <span className="font-bold text-[var(--ink)] font-mono tracking-widest">COMMITTEE</span>{" "}
+            to access the dashboard.
           </p>
         </main>
       </div>
