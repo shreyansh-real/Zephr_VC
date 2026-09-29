@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { ClusterCard } from "@/components/cluster-card";
+import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 
 const DEMO_CLUSTER = {
   id: "demo",
@@ -29,16 +30,28 @@ const DEMO_MESSAGES = [
 export function LandingHero() {
   const hasCountedRef = useRef<boolean>(false);
 
+  const typewriterWords = [
+    { text: "20" },
+    { text: "messages." },
+    { text: "6" },
+    { text: "issues." },
+    { text: "Start" },
+    { text: "with" },
+    { text: "the" },
+    { text: "red", className: "text-[var(--critical)]" },
+    { text: "one.", className: "text-[var(--critical)]" },
+  ];
+
   return (
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16">
-      {/* Headline */}
-      <div className="max-w-[640px] mb-10">
-        <h1 className="font-display font-black text-[40px] md:text-[52px] leading-[1.05] tracking-[-0.02em] text-[var(--ink)] mb-4">
-          20 messages. 6 issues. Start with the red one.
-        </h1>
-        <p className="text-[18px] text-[var(--muted-foreground)] mb-8" style={{ lineHeight: 1.55 }}>
+    <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 md:py-16">
+      {/* Headline & Typewriter */}
+      <div className="max-w-[760px] mb-10">
+        <TypewriterEffectSmooth words={typewriterWords} className="mb-2" />
+        
+        <p className="text-[18px] md:text-[20px] text-[var(--muted-foreground)] mb-8" style={{ lineHeight: 1.55 }}>
           AI reads, ranks, and groups every society complaint — so you act on what matters first.
         </p>
+
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href="/report"
