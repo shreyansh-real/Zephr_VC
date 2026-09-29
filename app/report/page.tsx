@@ -1,103 +1,65 @@
 import { NavDock } from "@/components/nav-dock";
 import { ReportForm } from "./report-form";
-import { ShieldCheck, Sparkles, Clock, BellRing, Layers, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Sparkles, Layers, CheckCircle2, Clock, MessageSquareQuote } from "lucide-react";
 
 export default function ReportPage() {
   return (
     <div className="min-h-screen pb-28" style={{ backgroundColor: "var(--bg)" }}>
       <div className="ml-0 md:ml-[90px] transition-all">
-        <main className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
-            
-            {/* Left Column: Context, How it Works & Trust Badges */}
-            <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-10">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-semibold bg-[var(--surface-2)] text-[var(--muted-foreground)] border border-[var(--border-token)] mb-4">
-                  <span className="w-2 h-2 rounded-full bg-[var(--resolved)] animate-pulse" />
-                  Resident Helpdesk · AI Triage
-                </div>
-                <h1 className="font-display font-black text-[36px] sm:text-[44px] leading-[1.08] tracking-[-0.03em] text-[var(--ink)]">
-                  Report an issue.<br />We&apos;ll handle the rest.
-                </h1>
-                <p className="text-[15px] text-[var(--muted-foreground)] mt-3 leading-relaxed">
-                  Submit any maintenance, facility, or community issue. Our intelligent system automatically prioritizes it, groups similar reports from neighbors, and alerts the management committee.
-                </p>
-              </div>
-
-              {/* How it works card */}
-              <div className="rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] p-5 flex flex-col gap-4 shadow-sm">
-                <p className="text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  How your report gets resolved
-                </p>
-
-                <div className="flex flex-col gap-3.5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[12px] font-bold text-[var(--ink)] shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <div>
-                      <h4 className="text-[13px] font-semibold text-[var(--ink)] leading-tight">
-                        AI Categorization & Ranking
-                      </h4>
-                      <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
-                        Detects urgency (Critical, High, Medium) and extracts the core issue in Hindi, English, or Hinglish.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[12px] font-bold text-[var(--ink)] shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <div>
-                      <h4 className="text-[13px] font-semibold text-[var(--ink)] leading-tight">
-                        Smart Neighbor Clustering
-                      </h4>
-                      <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
-                        If 5 residents report the same water issue, it groups into 1 single escalated ticket instead of duplicate chaos.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[12px] font-bold text-[var(--ink)] shrink-0 mt-0.5">
-                      3
-                    </div>
-                    <div>
-                      <h4 className="text-[13px] font-semibold text-[var(--ink)] leading-tight">
-                        Direct Email Resolution Updates
-                      </h4>
-                      <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
-                        Committee volunteers review, assign a technician, and send official resolution updates directly to your email.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3.5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)] flex items-center gap-2.5">
-                  <ShieldCheck size={18} className="text-[var(--resolved)] shrink-0" />
-                  <span className="text-[12px] font-medium text-[var(--ink)] leading-tight">
-                    Strict resident confidentiality
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)] flex items-center gap-2.5">
-                  <Sparkles size={18} className="text-[var(--ink)] shrink-0" />
-                  <span className="text-[12px] font-medium text-[var(--ink)] leading-tight">
-                    Multilingual NLP comprehension
-                  </span>
-                </div>
-              </div>
+        <main className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+          
+          {/* Header Section (Concise & Focused) */}
+          <div className="text-center max-w-[680px] mx-auto mb-8">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-semibold bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)] mb-3">
+              <span className="w-2 h-2 rounded-full bg-[var(--resolved)] animate-pulse" />
+              <span>Society Resident Portal · Direct Committee Dispatch</span>
             </div>
-
-            {/* Right Column: The Form */}
-            <div className="lg:col-span-7">
-              <ReportForm />
-            </div>
-
+            <h1 className="font-display font-black text-[32px] sm:text-[42px] leading-tight tracking-[-0.03em] text-[var(--ink)]">
+              Report an Issue
+            </h1>
+            <p className="text-[15px] sm:text-[16px] text-[var(--muted-foreground)] mt-2">
+              No app download required. Type in English, Hindi, or Hinglish — AI groups your complaint with neighbors and notifies committee volunteers immediately.
+            </p>
           </div>
+
+          {/* Primary Focal Hero: The Form */}
+          <div className="mb-12">
+            <ReportForm />
+          </div>
+
+          {/* Supporting Trust & How It Works Cards (Placed Cleanly Underneath) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-[var(--border-token)]">
+            <div className="p-4 rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 text-[var(--ink)] font-bold text-[14px]">
+                <Layers className="w-4 h-4 text-[var(--high)]" />
+                <span>Smart Neighbor Clustering</span>
+              </div>
+              <p className="text-[13px] text-[var(--muted-foreground)] leading-snug">
+                Multiple reports from the same wing or floor are automatically combined into a single high-priority ticket.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 text-[var(--ink)] font-bold text-[14px]">
+                <Sparkles className="w-4 h-4 text-[var(--low)]" />
+                <span>Multilingual NLP</span>
+              </div>
+              <p className="text-[13px] text-[var(--muted-foreground)] leading-snug">
+                Write freely in Hindi, Hinglish, or English. Our AI extracts urgency and categories automatically.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 text-[var(--ink)] font-bold text-[14px]">
+                <ShieldCheck className="w-4 h-4 text-[var(--resolved)]" />
+                <span>Confidential &amp; Direct</span>
+              </div>
+              <p className="text-[13px] text-[var(--muted-foreground)] leading-snug">
+                Issues are sent directly to designated society volunteers and verified committee members.
+              </p>
+            </div>
+          </div>
+
         </main>
       </div>
       <NavDock />
