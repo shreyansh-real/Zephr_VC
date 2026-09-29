@@ -11,7 +11,6 @@ import {
   MessageSquareText,
   Send,
   Sparkles,
-  ArrowRight,
   RotateCcw,
 } from "lucide-react";
 
@@ -22,11 +21,11 @@ interface SuccessData {
   cluster_size: number;
 }
 
-const QUICK_EXAMPLES = [
-  "Water supply stopped since morning",
-  "Wing B lift making grinding noise",
-  "Basement parking lights flickering",
-  "Garbage chute blocked on 3rd floor",
+const ANONYMOUS_EXAMPLES = [
+  "Water supply low pressure",
+  "Corridor light bulb fused",
+  "Elevator stopping between floors",
+  "Noise disturbance past 10 PM",
 ];
 
 export function ReportForm() {
@@ -44,15 +43,15 @@ export function ReportForm() {
     if (!flatNo.trim()) {
       errs.flat_no = "Flat number is required";
     } else if (!/^[A-Za-z0-9][-A-Za-z0-9]{0,9}$/.test(flatNo.trim())) {
-      errs.flat_no = "Invalid format (e.g. B-204 or 101)";
+      errs.flat_no = "Invalid format (e.g. A-402 or 101)";
     }
 
     if (!name.trim()) {
-      errs.resident_name = "Your name is required";
+      errs.resident_name = "Name / Identifier is required";
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errs.email = "Please enter a valid email address";
+      errs.email = "Please enter a valid email address (e.g. xyz@gmail.com)";
     }
 
     if (!text.trim()) {
@@ -105,12 +104,12 @@ export function ReportForm() {
         className="rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] p-6 md:p-8 shadow-sm"
       >
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-11 h-11 rounded-full bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0">
-            <CheckCircle2 size={24} className="text-[var(--resolved)]" />
+          <div className="w-12 h-12 rounded-full bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0">
+            <CheckCircle2 size={26} className="text-[var(--resolved)]" />
           </div>
           <div>
-            <h2 className="font-display font-black text-[28px] md:text-[32px] leading-tight text-[var(--ink)]">
-              Complaint logged.
+            <h2 className="font-display font-black text-[26px] md:text-[30px] leading-tight text-[var(--ink)]">
+              Complaint logged successfully.
             </h2>
             <p className="text-[13px] text-[var(--muted-foreground)]">
               AI has triaged and clustered your issue for committee review.
@@ -127,7 +126,7 @@ export function ReportForm() {
             <span className="text-[12px] font-semibold text-[var(--muted-foreground)]">
               {success.cluster_size > 1
                 ? `Grouped with ${success.cluster_size - 1} similar report${success.cluster_size > 2 ? "s" : ""}`
-                : "New cluster created"}
+                : "New issue ticket created"}
             </span>
           </div>
 
@@ -138,7 +137,7 @@ export function ReportForm() {
           {email && (
             <p className="text-[13px] text-[var(--muted-foreground)] flex items-center gap-1.5 pt-2 border-t border-[var(--border-token)]">
               <Mail size={13} />
-              Updates will be sent to <strong className="text-[var(--ink)]">{email}</strong>
+              Status updates will be sent to <strong className="text-[var(--ink)]">{email}</strong>
             </p>
           )}
         </div>
@@ -155,7 +154,7 @@ export function ReportForm() {
           className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl font-bold text-[14px] border border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)]"
         >
           <RotateCcw size={15} />
-          Report another problem
+          Report another issue
         </button>
       </div>
     );
@@ -167,6 +166,15 @@ export function ReportForm() {
       noValidate
       className="rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] p-6 md:p-8 shadow-sm flex flex-col gap-6"
     >
+      <div className="border-b border-[var(--border-token)] pb-4">
+        <h3 className="text-[18px] font-bold text-[var(--ink)]">
+          Submit Issue Ticket
+        </h3>
+        <p className="text-[13px] text-[var(--muted-foreground)] mt-0.5">
+          All details are shared directly with the society committee volunteers.
+        </p>
+      </div>
+
       {/* Row 1: Flat No + Name */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Flat Number */}
@@ -180,7 +188,7 @@ export function ReportForm() {
             type="text"
             value={flatNo}
             onChange={(e) => setFlatNo(e.target.value)}
-            placeholder="e.g. B-204"
+            placeholder="e.g. A-402 or 101"
             disabled={loading}
             aria-describedby={fieldErrors.flat_no ? "flat_no_err" : undefined}
             className="h-11 px-3.5 rounded-xl bg-[var(--bg)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50"
@@ -197,14 +205,14 @@ export function ReportForm() {
         <div className="flex flex-col gap-1.5">
           <label htmlFor="resident_name" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
             <User size={14} className="text-[var(--muted-foreground)]" />
-            Your name <span className="text-[var(--critical)]">*</span>
+            Name / Identifier <span className="text-[var(--critical)]">*</span>
           </label>
           <input
             id="resident_name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Ramesh Kumar"
+            placeholder="e.g. XYZ or Resident"
             disabled={loading}
             aria-describedby={fieldErrors.resident_name ? "name_err" : undefined}
             className="h-11 px-3.5 rounded-xl bg-[var(--bg)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50"
@@ -226,7 +234,7 @@ export function ReportForm() {
             Email address
           </label>
           <span className="text-[11px] text-[var(--muted-foreground)] font-medium">
-            For status updates
+            For resolution updates
           </span>
         </div>
         <input
@@ -234,7 +242,7 @@ export function ReportForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="ramesh@gmail.com"
+          placeholder="e.g. xyz@gmail.com"
           disabled={loading}
           aria-describedby={fieldErrors.email ? "email_err" : "email_hint"}
           className="h-11 px-3.5 rounded-xl bg-[var(--bg)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50"
@@ -246,7 +254,7 @@ export function ReportForm() {
           </p>
         ) : (
           <p id="email_hint" className="text-[12px] text-[var(--muted-foreground)]">
-            We will email you when the society committee responds or resolves the issue.
+            We will email you when the committee assigns a technician or resolves the issue.
           </p>
         )}
       </div>
@@ -256,7 +264,7 @@ export function ReportForm() {
         <div className="flex items-center justify-between">
           <label htmlFor="raw_text" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
             <MessageSquareText size={14} className="text-[var(--muted-foreground)]" />
-            Describe the problem <span className="text-[var(--critical)]">*</span>
+            Describe what happened <span className="text-[var(--critical)]">*</span>
           </label>
           <span className="text-[11px] text-[var(--muted-foreground)] font-mono">
             {text.length}/1000
@@ -266,12 +274,12 @@ export function ReportForm() {
           id="raw_text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="e.g. B-204 mein subah se low pressure paani aa raha hai, lift #2 bhi nahi chal rahi…"
+          placeholder="e.g. Paani ka pressure subah se bahut kam hai, ya lift beech mein ruk rahi hai…"
           disabled={loading}
           rows={4}
           maxLength={1000}
           aria-describedby={fieldErrors.raw_text ? "text_err" : "text_hint"}
-          className="min-h-[120px] px-3.5 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] resize-y disabled:opacity-50"
+          className="min-h-[110px] px-3.5 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border-token)] text-[15px] text-[var(--ink)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--border-strong)] resize-y disabled:opacity-50"
           style={{ lineHeight: 1.6 }}
         />
 
@@ -281,12 +289,12 @@ export function ReportForm() {
           </p>
         )}
 
-        {/* Quick Suggestion Chips */}
+        {/* Quick Suggestion Chips (Anonymous) */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           <span className="text-[11px] font-medium text-[var(--muted-foreground)] flex items-center gap-1 mr-1">
-            <Sparkles size={12} /> Suggestions:
+            <Sparkles size={12} /> Templates:
           </span>
-          {QUICK_EXAMPLES.map((eg) => (
+          {ANONYMOUS_EXAMPLES.map((eg) => (
             <button
               key={eg}
               type="button"
@@ -311,13 +319,13 @@ export function ReportForm() {
       <button
         type="submit"
         disabled={loading}
-        className="h-12 px-6 rounded-xl font-bold text-[15px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm"
+        className="h-12 px-6 rounded-xl font-bold text-[15px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm cursor-pointer"
       >
         {loading ? (
           <span>Analyzing with AI…</span>
         ) : (
           <>
-            <span>Submit Complaint</span>
+            <span>Submit Issue Report</span>
             <Send size={15} />
           </>
         )}
