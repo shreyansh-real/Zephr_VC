@@ -83,48 +83,46 @@ export function LandingHero() {
   const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
   const typewriterWords = [
-    { text: "Smart" },
-    { text: "AI" },
-    { text: "Triage" },
-    { text: "for" },
-    { text: "Housing" },
-    { text: "Societies." },
+    { text: "Turn" },
+    { text: "WhatsApp" },
+    { text: "chaos" },
+    { text: "into" },
+    { text: "prioritized," },
+    { text: "solved", className: "text-[var(--critical)]" },
+    { text: "society", className: "text-[var(--critical)]" },
+    { text: "issues.", className: "text-[var(--critical)]" },
   ];
 
   return (
-    <BackgroundBeamsWithCollision className="py-12 md:py-20">
+    <BackgroundBeamsWithCollision className="py-10 md:py-16">
       <div className="max-w-[1200px] w-full mx-auto px-4 md:px-8 relative z-10">
         
         {/* Top Community Badge */}
         <div className="flex justify-center md:justify-start mb-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface)]/90 backdrop-blur-md shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface)]/90 backdrop-blur-md shadow-sm">
             <span className="flex h-2.5 w-2.5 rounded-full bg-[var(--critical)] animate-pulse" />
             <span className="text-[13px] sm:text-[14px] font-bold tracking-wide text-[var(--ink)]">
-              Next-Gen RWA & Society Management System
+              AI Society Triage • Built for RWA Committees &amp; Residents
             </span>
           </div>
         </div>
 
-        {/* 2-Line Hero Section Header */}
-        <div className="max-w-[900px] mb-10 text-center md:text-left">
-          {/* Line 1: Typewriter Animation */}
-          <TypewriterEffectSmooth 
-            words={typewriterWords} 
-            className="justify-center md:justify-start -mb-1" 
-          />
+        {/* 1 Single Complete Hero Headline */}
+        <div className="max-w-[960px] mb-8 text-center md:text-left">
+          <div className="mb-4">
+            <TypewriterEffectSmooth 
+              words={typewriterWords} 
+              className="justify-center md:justify-start" 
+            />
+          </div>
 
-          {/* Line 2: Catchy & Informative Follow-up */}
-          <h2 className="text-[26px] sm:text-[34px] md:text-[44px] font-black font-display tracking-tight text-[var(--ink)] leading-[1.15] mb-5">
-            Turn WhatsApp chaos into prioritized, solved issues.
-          </h2>
-
-          {/* High-Clarity Subtitle */}
-          <p className="text-[17px] sm:text-[19px] md:text-[20px] font-normal text-[var(--muted-foreground)] mb-8 leading-relaxed max-w-[780px]">
-            Residents report problems in plain English, Hindi, or Hinglish. AI deduplicates 50+ messages, detects emergencies like water cuts &amp; lift failures, and equips your committee to resolve issues with 1-click WhatsApp broadcasts.
+          {/* Subtitle */}
+          <p className="text-[17px] sm:text-[19px] md:text-[21px] font-medium text-[var(--muted-foreground)] mb-8 leading-relaxed max-w-[800px]">
+            Residents report in plain English, Hindi, or Hinglish. AI groups 50+ duplicate messages into clear actionable tickets, highlights critical emergencies (water cuts, power, stuck lifts), and lets committees broadcast updates in 1 click.
           </p>
 
           {/* High-Contrast CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-7">
             <Link
               href="/report"
               className="group relative inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-xl font-black text-[17px] bg-[var(--ink)] text-[var(--ink-inverse)] shadow-lg shadow-black/15 hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"

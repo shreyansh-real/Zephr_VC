@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { motion, stagger, useAnimate, useInView } from "framer-motion";
-import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export const TypewriterEffect = ({
   words,
@@ -16,173 +16,80 @@ export const TypewriterEffect = ({
   className?: string;
   cursorClassName?: string;
 }) => {
-  // split text inside words into individual words
-  const wordsArray = words.map((word) => {
-    return {
-      ...word,
-      text: word.text.split(""),
-    };
-  });
+  // Flatten words with characters
+  const fullText = words.map((w) => w.text).join(" ");
+  const [displayedTextLength, setDisplayedTextLength] = useState(0);
 
-  const [scope, animate] = useAnimate();
-  const isInView = useInView(scope);
   useEffect(() => {
-    if (isInView) {
-      animate(
-        "span",
-        {
-          display: "inline-block",
-          opacity: 1,
-          width: "fit-content",
-        },
-        {
-          duration: 0.3,
-          delay: stagger(0.1),
-          ease: "easeInOut",
-        }
-      );
-    }
-  }, [isInView, animate]);
+    let index = 0;
+    const interval = setInterval(() => {
+      index++;
+      setDisplayedTextLength(index);
+      if (index >= fullText.length) {
+        clearInterval(interval);
+      }
+    }, 40);
 
-  const renderWords = () => {
-    return (
-      <motion.div ref={scope} className="inline">
-        {wordsArray.map((word, idx) => {
-          return (
-            <div key={`word-${idx}`} className="inline-block">
-              {word.text.map((char, index) => (
-                <motion.span
-                  initial={{}}
-                  key={`char-${index}`}
-                  className={cn(
-                    `opacity-0 hidden text-[var(--ink)]`,
-                    word.className
-                  )}
-                >
-                  {char}
-                </motion.span>
-              ))}
-              &nbsp;
-            </div>
-          );
-        })}
-      </motion.div>
-    );
-  };
+    return () => clearInterval(interval);
+  }, [fullText]);
+
+  // Compute which words/characters are visible
+  let charCount = 0;
 
   return (
-    <div
+    <h1
       className={cn(
-        "text-base sm:text-xl md:text-3xl lg:text-5xl font-bold text-center",
+        "font-display font-black text-[30px] sm:text-[42px] md:text-[54px] lg:text-[58px] leading-[1.12] tracking-[-0.02em] text-[var(--ink)] inline-block max-w-full break-words",
         className
       )}
     >
-      {renderWords()}
-      <motion.span
-        initial={{
-          opacity: 0,
-        }}
-        animate={{
-          opacity: 1,
-        }}
-        transition={{
-          duration: 0.8,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-        className={cn(
-          "inline-block rounded-sm w-[4px] h-4 md:h-6 lg:h-10 bg-[var(--ink)]",
-          cursorClassName
-        )}
-      ></motion.span>
-    </div>
-  );
-};
-
-export const TypewriterEffectSmooth = ({
-  words,
-  className,
-  cursorClassName,
-}: {
-  words: {
-    text: string;
-    className?: string;
-  }[];
-  className?: string;
-  cursorClassName?: string;
-}) => {
-  // split text inside words into individual words
-  const wordsArray = words.map((word) => {
-    return {
-      ...word,
-      text: word.text.split(""),
-    };
-  });
-
-  const renderWords = () => {
-    return (
-      <div className="inline">
-        {wordsArray.map((word, idx) => {
-          return (
-            <div key={`word-${idx}`} className="inline-block">
-              {word.text.map((char, index) => (
+      {words.map((wordObj, wIdx) => {
+        const wordChars = wordObj.text.split("");
+        return (
+          <span key={`word-${wIdx}`} className="inline-block whitespace-nowrap">
+            {wordChars.map((char, cIdx) => {
+              charCount++;
+              const isVisible = charCount <= displayedTextLength;
+              return (
                 <span
-                  key={`char-${index}`}
-                  className={cn(`text-[var(--ink)]`, word.className)}
+                  key={`char-${cIdx}`}
+                  className={cn(
+                    "transition-opacity duration-150",
+                    isVisible ? "opacity-100" : "opacity-0",
+                    wordObj.className
+                  )}
                 >
                   {char}
                 </span>
-              ))}
-              &nbsp;
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  return (
-    <div className={cn("flex items-center space-x-1 my-2 flex-wrap", className)}>
-      <motion.div
-        className="overflow-hidden pb-1"
-        initial={{
-          width: "0%",
-        }}
-        whileInView={{
-          width: "fit-content",
-        }}
-        transition={{
-          duration: 2,
-          ease: "linear",
-          delay: 0.2,
-        }}
-      >
-        <div
-          className="text-[32px] sm:text-[44px] md:text-[52px] font-black font-display leading-[1.1] tracking-[-0.02em] text-[var(--ink)]"
-          style={{
-            whiteSpace: "nowrap",
-          }}
-        >
-          {renderWords()}{" "}
-        </div>{" "}
-      </motion.div>
+              );
+            })}
+            {/* Space between words */}
+            {(() => {
+              charCount++;
+              return (
+                <span className="inline-block">
+                  &nbsp;
+                </span>
+              );
+            })()}
+          </span>
+        );
+      })}
       <motion.span
-        initial={{
-          opacity: 0,
-        }}
-        animate={{
-          opacity: 1,
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 1, 0] }}
         transition={{
           duration: 0.8,
           repeat: Infinity,
-          repeatType: "reverse",
+          ease: "easeInOut",
         }}
         className={cn(
-          "inline-block rounded-sm w-[4px] h-8 sm:h-10 md:h-12 bg-[var(--critical)]",
+          "inline-block w-[3.5px] sm:w-[4px] h-[26px] sm:h-[38px] md:h-[48px] bg-[var(--critical)] align-middle ml-1 rounded-sm",
           cursorClassName
         )}
-      ></motion.span>
-    </div>
+      />
+    </h1>
   );
 };
+
+export const TypewriterEffectSmooth = TypewriterEffect;
