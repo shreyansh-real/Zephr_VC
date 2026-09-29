@@ -75,27 +75,36 @@ export async function POST(req: Request) {
     const clusterSnap = await clusterRef.get();
     const clusterData = clusterSnap.data();
     if (clusterData) {
-      const currentRank = clusterData.urgency_rank as number ?? 1;
-      const newUrgencyRank = Math.max(currentRank, urgencyRank);
-      const newUrgency = Object.entries(URGENCY_RANK).find(([, v]) => v === newUrgencyRank)?.[0] ?? triage.urgency;
-      const shouldEscalate =
-        (clusterData.complaint_count as number) + 1 >= 5 &&
-        newUrgencyRank < 4 &&
-        !clusterData.escalated;
-      const escalatedRank = shouldEscalate ? Math.min(newUrgencyRank + 1, 4) : newUrgencyRank;
-      const escalatedUrgency = shouldEscalate
-        ? Object.entries(URGENCY_RANK).find(([, v]) => v === escalatedRank)?.[0] ?? newUrgency
-        : newUrgency;
+      const currentCount = (clusterData.complaint_count as number) || 1;
+      const newCount = currentCount + 1;
+      const currentRank = (clusterData.urgency_rank as number) ?? 1;
+
+      // Collective Volume Escalation Rule:
+      // If 1 report -> triage.urgency (Medium/High)
+      // If 2-3 reports -> At least High (rank 3)
+      // If >= 4 reports -> Critical (rank 4)
+      let calculatedRank = Math.max(currentRank, urgencyRank);
+      if (newCount >= 4) {
+        calculatedRank = 4; // Critical
+      } else if (newCount >= 2 && calculatedRank < 3) {
+        calculatedRank = 3; // High
+      }
+
+      const rankToUrgency: Record<number, string> = { 4: "Critical", 3: "High", 2: "Medium", 1: "Low" };
+      const escalatedUrgency = rankToUrgency[calculatedRank] ?? triage.urgency;
+      const isEscalated = newCount >= 2 || clusterData.escalated;
 
       batch.update(clusterRef, {
         complaint_count: FieldValue.increment(1),
         flats: FieldValue.arrayUnion(flat_no),
         urgency: escalatedUrgency,
-        urgency_rank: escalatedRank,
+        urgency_rank: calculatedRank,
         needs_review: needsReview ? true : clusterData.needs_review,
-        escalated: shouldEscalate || clusterData.escalated,
-        escalation_reason: shouldEscalate
-          ? `Auto-escalated: ${(clusterData.complaint_count as number) + 1} complaints reached threshold.`
+        escalated: isEscalated,
+        escalation_reason: newCount >= 4
+          ? `Critical threshold: ${newCount} residents reported this same issue.`
+          : newCount >= 2
+          ? `High priority: Multiple residents (${newCount}) reporting this issue.`
           : clusterData.escalation_reason ?? null,
         updated_at: now,
       });

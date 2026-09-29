@@ -2,7 +2,7 @@
 
 import { useState, type MutableRefObject } from "react";
 import { UrgencyChip, CategoryChip, UrgencyBar, type UrgencyLevel, type CategoryType } from "./urgency";
-import { Eye, ChevronRight, CheckCheck, RotateCcw } from "lucide-react";
+import { Eye, ChevronRight, CheckCheck, RotateCcw, User } from "lucide-react";
 
 interface Cluster {
   id: string;
@@ -114,6 +114,12 @@ export function ClusterCard({ cluster, onClick, onUpdate }: ClusterCardProps) {
               {" · "}
               {formatAge(cluster.created_at)}
             </span>
+            {cluster.assignee && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--ink)] px-2 py-0.5 rounded-md bg-[var(--surface-2)] border border-[var(--border-token)]">
+                <User size={11} className="text-[var(--muted-foreground)]" />
+                {cluster.assignee}
+              </span>
+            )}
           </div>
         </div>
 

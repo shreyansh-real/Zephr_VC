@@ -80,7 +80,7 @@ export function ClusterDrawer({ clusterId, onClose, onUpdate }: Props) {
   const [sentMsg, setSentMsg] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reportsOpen, setReportsOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(true);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const fetchDetail = useCallback(async () => {
