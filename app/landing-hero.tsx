@@ -16,11 +16,19 @@ import {
   Radio,
   Send,
   BellRing,
+  ArrowUpDown,
+  ShieldAlert,
+  MessageSquareQuote,
+  Layers,
+  Clock,
+  Check,
+  Building,
 } from "lucide-react";
 
 interface TabData {
   id: string;
   label: string;
+  icon: typeof Droplets;
   category: string;
   title: string;
   urgency: "Critical" | "High" | "Medium";
@@ -29,52 +37,75 @@ interface TabData {
   flats: string[];
   complaintCount: number;
   sampleChat: string;
-  resolutionTime: string;
+  language: string;
+  statusMessage: string;
   broadcastMessage: string;
 }
 
 const TABS: TabData[] = [
   {
     id: "water",
-    label: "💧 Water shortage",
-    category: "Water supply",
-    title: "Tower B overhead tank empty (pump trip)",
+    label: "Water supply",
+    icon: Droplets,
+    category: "Utility & Water",
+    title: "Tower B overhead tank empty (motor pump trip)",
     urgency: "Critical",
     urgencyColor: "var(--critical)",
     badgeBg: "var(--critical-tint)",
     flats: ["B-102", "B-204", "B-501", "B-702", "B-903"],
     complaintCount: 14,
-    sampleChat: '"Paani nahi aa raha 6:30 baje se... please check pump!"',
-    resolutionTime: "Grouped automatically",
+    sampleChat: "Paani nahi aa raha 6:30 baje se... please check pump!",
+    language: "Hinglish & Hindi",
+    statusMessage: "Auto-clustered 14 messages into 1 ticket",
     broadcastMessage: "Plumber onsite. Motor reset completed. Water supply resuming by 8:30 AM.",
   },
   {
     id: "lift",
-    label: "🛗 Lift breakdown",
-    category: "Elevator maintenance",
-    title: "Tower A passenger lift stuck at 4th floor",
+    label: "Elevator breakdown",
+    icon: ArrowUpDown,
+    category: "Lift maintenance",
+    title: "Tower A passenger elevator stuck on 4th floor",
     urgency: "Critical",
     urgencyColor: "var(--critical)",
     badgeBg: "var(--critical-tint)",
-    flats: ["A-401", "A-404", "A-802"],
+    flats: ["A-401", "A-404", "A-802", "A-1002"],
     complaintCount: 8,
-    sampleChat: '"Lift #2 making strange sound and halted at 4th floor."',
-    resolutionTime: "Grouped automatically",
-    broadcastMessage: "Technician at Tower A. Lift #1 operational, Lift #2 under inspection.",
+    sampleChat: "Lift #2 making strange sound and halted at 4th floor.",
+    language: "English",
+    statusMessage: "Escalated to Emergency Technician Dispatch",
+    broadcastMessage: "Technician at Tower A. Lift #1 operational, Lift #2 under active inspection.",
   },
   {
     id: "noise",
-    label: "🔊 Late night noise",
-    category: "Community & quiet hours",
-    title: "Clubhouse terrace music after 10:30 PM",
+    label: "Noise & quiet hours",
+    icon: Volume2,
+    category: "Community bylaws",
+    title: "Clubhouse terrace loud music after 10:30 PM",
     urgency: "Medium",
     urgencyColor: "var(--high)",
     badgeBg: "var(--high-tint)",
-    flats: ["C-201", "C-202"],
+    flats: ["C-201", "C-202", "C-305"],
     complaintCount: 5,
-    sampleChat: '"Too loud party noise near Tower C terrace."',
-    resolutionTime: "Grouped automatically",
-    broadcastMessage: "Security team asked to reduce clubhouse music volume per RWA rules.",
+    sampleChat: "Too loud party noise near Tower C terrace past quiet hours.",
+    language: "English",
+    statusMessage: "Routed to Night Security Desk",
+    broadcastMessage: "Security team dispatched to reduce clubhouse music volume per society rules.",
+  },
+  {
+    id: "security",
+    label: "Security & gates",
+    icon: ShieldAlert,
+    category: "Premises security",
+    title: "Main Gate 2 boom barrier sensor malfunction",
+    urgency: "High",
+    urgencyColor: "var(--high)",
+    badgeBg: "var(--high-tint)",
+    flats: ["D-101", "D-203", "A-105"],
+    complaintCount: 6,
+    sampleChat: "Gate 2 boom barrier is stuck open, vehicles entering unchecked.",
+    language: "English & Hinglish",
+    statusMessage: "Auto-assigned to Security Supervisor",
+    broadcastMessage: "Manual guard stationed at Gate 2. Sensor replacement scheduled for 2:00 PM.",
   },
 ];
 
@@ -82,7 +113,6 @@ export function LandingHero() {
   const [activeTab, setActiveTab] = useState<string>("water");
   const currentTab = TABS.find((t) => t.id === activeTab) || TABS[0];
 
-  // Headline fully in --ink, no red
   const typewriterWords = [
     { text: "Turn" },
     { text: "WhatsApp" },
@@ -95,20 +125,20 @@ export function LandingHero() {
   ];
 
   return (
-    <BackgroundBeamsWithCollision className="py-10 md:py-16">
-      <div className="max-w-[1200px] w-full mx-auto px-4 md:px-8 relative z-10">
+    <BackgroundBeamsWithCollision className="py-8 md:py-14">
+      <div className="max-w-[1240px] w-full mx-auto px-4 md:px-8 relative z-10">
 
-        {/* Top badge — no red dot */}
+        {/* Top badge */}
         <div className="flex justify-center md:justify-start mb-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface)]/90 backdrop-blur-md shadow-sm">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-[var(--muted-foreground)]" />
-            <span className="text-[14px] font-semibold text-[var(--ink)]">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md shadow-sm">
+            <span className="flex h-2 w-2 rounded-full bg-[var(--low)] animate-pulse" />
+            <span className="text-[13px] font-semibold text-[var(--ink)]">
               AI society triage · Built for RWA committees &amp; residents
             </span>
           </div>
         </div>
 
-        {/* Hero headline — fully --ink */}
+        {/* Hero headline */}
         <div className="max-w-[960px] mb-8 text-center md:text-left">
           <div className="mb-4">
             <TypewriterEffectSmooth
@@ -117,7 +147,7 @@ export function LandingHero() {
             />
           </div>
 
-          {/* Subtitle — corrected copy */}
+          {/* Subtitle */}
           <p className="text-[17px] sm:text-[19px] md:text-[21px] font-medium text-[var(--muted-foreground)] mb-8 leading-relaxed max-w-[800px]">
             Residents report in plain English, Hindi, or Hinglish. AI groups duplicate messages automatically into clear tickets, highlights critical emergencies, and lets committees send a reply in one click.
           </p>
@@ -126,22 +156,22 @@ export function LandingHero() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-7">
             <Link
               href="/report"
-              className="group relative inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-xl font-black text-[17px] bg-[var(--ink)] text-[var(--ink-inverse)] shadow-lg shadow-black/15 hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"
+              className="group relative inline-flex items-center justify-center gap-2.5 h-13 px-7 rounded-xl font-bold text-[16px] bg-[var(--ink)] text-[var(--ink-inverse)] shadow-md hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)]"
             >
               <span>Report a problem (no app needed)</span>
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Link>
 
             <Link
               href="/committee"
-              className="inline-flex items-center justify-center gap-2.5 h-14 px-8 rounded-xl font-bold text-[17px] border-2 border-[var(--ink)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)] shadow-sm"
+              className="inline-flex items-center justify-center gap-2.5 h-13 px-7 rounded-xl font-bold text-[16px] border-2 border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] hover:border-[var(--ink)] hover:scale-[1.01] active:scale-[0.99] transition-all focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)] shadow-sm"
             >
-              <ShieldCheck className="w-5 h-5 text-[var(--ink)]" />
+              <ShieldCheck className="w-4 h-4 text-[var(--ink)]" />
               <span>Committee dashboard</span>
             </Link>
           </div>
 
-          {/* Feature badges — corrected copy, no red, min 14px */}
+          {/* Quick value props */}
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-6 text-[14px] font-semibold text-[var(--muted-foreground)]">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-[var(--low)]" />
@@ -149,179 +179,192 @@ export function LandingHero() {
             </div>
             <div className="flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-[var(--high)]" />
-              <span>Groups duplicate messages automatically</span>
+              <span>Auto-groups duplicate complaints</span>
             </div>
             <div className="flex items-center gap-1.5">
               <BellRing className="w-4 h-4 text-[var(--ink)]" />
-              <span>One-click reply, ready to send</span>
+              <span>1-click broadcast replies</span>
             </div>
           </div>
         </div>
 
-        {/* Simulation panel */}
-        <div className="rounded-2xl border-2 border-[var(--border-token)] bg-[var(--surface)] shadow-lg overflow-hidden backdrop-blur-md">
+        {/* ── Recreated Minimalist Live Simulation Interactive Hub ── */}
+        <div className="rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-lg overflow-hidden backdrop-blur-md">
 
-          {/* Header bar — Radio icon in muted, no red */}
+          {/* Header Bar with Live Indicator & Tab Selector */}
           <div className="px-5 py-4 border-b border-[var(--border-token)] bg-[var(--surface-2)] flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <Radio className="w-4 h-4 text-[var(--muted-foreground)]" />
+              <Radio className="w-4 h-4 text-[var(--muted-foreground)] animate-pulse" />
               <span className="text-[14px] font-semibold text-[var(--ink)]">
-                Society simulation · Palm Grove Heights RWA
+                Live interactive simulation · Palm Grove Heights RWA
               </span>
             </div>
 
-            {/* Tab selector — min 14px, sentence case */}
-            <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border-token)]">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1 text-[14px] font-semibold rounded-md transition-all ${
-                    activeTab === tab.id
-                      ? "bg-[var(--ink)] text-[var(--ink-inverse)] shadow-sm"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Hub grid */}
-          <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-            {/* Left: incoming submissions */}
-            <div className="lg:col-span-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                {/* Sentence case, no uppercase tracking */}
-                <span className="text-[14px] font-semibold text-[var(--muted-foreground)]">
-                  Incoming resident submissions
-                </span>
-                {/* Chip — ink/surface, not red */}
-                <span className="text-[14px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)]">
-                  {currentTab.complaintCount} grouped
-                </span>
-              </div>
-
-              {/* Message bubble — "Recent submission", no "Voice" */}
-              <div className="p-4 rounded-xl border border-[var(--border-token)] bg-[var(--surface-2)] flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-semibold text-[var(--ink)]">Recent submission</span>
-                  <span className="text-[14px] text-[var(--muted-foreground)]">Just now</span>
-                </div>
-                <p className="text-[15px] font-medium text-[var(--ink)] italic bg-[var(--surface)] p-3 rounded-lg border border-[var(--border-token)]">
-                  {currentTab.sampleChat}
-                </p>
-                <div className="flex items-center gap-2 pt-1 flex-wrap">
-                  <span className="text-[14px] text-[var(--muted-foreground)]">Flats reporting:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {currentTab.flats.map((flat) => (
-                      <span key={flat} className="text-[14px] font-semibold px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-token)]">
-                        {flat}
-                      </span>
-                    ))}
-                    <span className="text-[14px] text-[var(--muted-foreground)] px-1">
-                      +{currentTab.complaintCount - currentTab.flats.length} more
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* AI status — min 14px */}
-              <div className="p-3.5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[var(--low)]" />
-                  <span className="text-[14px] font-semibold text-[var(--ink)]">AI status:</span>
-                  <span className="text-[14px] text-[var(--muted-foreground)]">{currentTab.resolutionTime}</span>
-                </div>
-                <span className="text-[14px] font-semibold text-[var(--low)]">Done</span>
-              </div>
-            </div>
-
-            {/* Right: committee action */}
-            <div className="lg:col-span-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-semibold text-[var(--muted-foreground)]">
-                  Committee action
-                </span>
-                {/* Priority chip — red only for Critical */}
-                <span
-                  className="text-[14px] font-semibold px-2.5 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: currentTab.badgeBg,
-                    color: currentTab.urgencyColor,
-                    border: `1px solid ${currentTab.urgencyColor}`,
-                  }}
-                >
-                  {currentTab.urgency} priority
-                </span>
-              </div>
-
-              <div className="p-4 rounded-xl border-2 border-[var(--border-token)] bg-[var(--surface)] flex flex-col gap-3">
-                {/* Category chip — sentence case, no uppercase */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-semibold px-2 py-0.5 rounded bg-[var(--surface-2)] text-[var(--ink)]">
-                    {currentTab.category}
-                  </span>
-                </div>
-
-                <h4 className="text-[18px] font-bold text-[var(--ink)]">
-                  {currentTab.title}
-                </h4>
-
-                {/* Reply section — corrected label, Send icon in muted */}
-                <div className="mt-1 pt-3 border-t border-[var(--border-token)] flex flex-col gap-2">
-                  <span className="text-[14px] font-semibold text-[var(--ink)] flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-                    One-click reply, ready to send:
-                  </span>
-                  <div className="p-3 rounded-lg bg-[var(--surface-2)] text-[14px] text-[var(--ink)] border border-[var(--border-token)] leading-snug">
-                    📢 &quot;{currentTab.broadcastMessage}&quot;
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[14px] text-[var(--muted-foreground)]">
-                    Saves the committee manual follow-up calls
-                  </span>
-                  <Link
-                    href="/committee"
-                    className="text-[14px] font-semibold text-[var(--ink)] hover:underline flex items-center gap-1"
+            {/* Category Switcher Tabs (Lucide icons, no emojis) */}
+            <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--border-token)] overflow-x-auto max-w-full">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-lg transition-all whitespace-nowrap ${
+                      active
+                        ? "bg-[var(--ink)] text-[var(--ink-inverse)] shadow-sm"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
+                    }`}
                   >
-                    Open dashboard →
-                  </Link>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3-Step Clean Visual Grid */}
+          <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+
+            {/* Step 1: Resident Submission */}
+            <div className="lg:col-span-4 flex flex-col justify-between p-4 sm:p-5 rounded-xl border border-[var(--border-token)] bg-[var(--surface-2)]">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    <MessageSquareQuote className="w-3.5 h-3.5" />
+                    <span>1. Resident report</span>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-token)]">
+                    {currentTab.language}
+                  </span>
                 </div>
+
+                <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border-token)] shadow-2xs mb-3">
+                  <p className="text-[14px] text-[var(--ink)] leading-relaxed italic">
+                    &ldquo;{currentTab.sampleChat}&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-[12px] font-semibold text-[var(--muted-foreground)] pt-2 border-t border-[var(--border-token)]">
+                  <span>Flats affected</span>
+                  <span className="text-[var(--ink)]">{currentTab.complaintCount} residents</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {currentTab.flats.map((flat) => (
+                    <span
+                      key={flat}
+                      className="text-[12px] font-semibold px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-token)]"
+                    >
+                      {flat}
+                    </span>
+                  ))}
+                  <span className="text-[12px] font-medium text-[var(--muted-foreground)] px-1 self-center">
+                    +{currentTab.complaintCount - currentTab.flats.length} more
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2: AI Clustering & Urgency */}
+            <div className="lg:col-span-4 flex flex-col justify-between p-4 sm:p-5 rounded-xl border border-[var(--border-token)] bg-[var(--surface-2)]">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>2. AI auto-cluster</span>
+                  </div>
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: currentTab.badgeBg,
+                      color: currentTab.urgencyColor,
+                      border: `1px solid ${currentTab.urgencyColor}`,
+                    }}
+                  >
+                    {currentTab.urgency} priority
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border-token)] shadow-2xs mb-3">
+                  <div className="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1">
+                    {currentTab.category}
+                  </div>
+                  <h4 className="text-[15px] font-bold text-[var(--ink)] leading-snug">
+                    {currentTab.title}
+                  </h4>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border-token)]">
+                <Sparkles className="w-4 h-4 text-[var(--high)] shrink-0" />
+                <span className="text-[12px] font-medium text-[var(--ink)] leading-tight">
+                  {currentTab.statusMessage}
+                </span>
+              </div>
+            </div>
+
+            {/* Step 3: Committee One-Click Resolution */}
+            <div className="lg:col-span-4 flex flex-col justify-between p-4 sm:p-5 rounded-xl border-2 border-[var(--ink)] bg-[var(--surface)]">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[var(--ink)]">
+                    <Send className="w-3.5 h-3.5 text-[var(--ink)]" />
+                    <span>3. 1-Click broadcast</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-[var(--low)] flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Ready
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)] text-[13px] text-[var(--ink)] leading-relaxed mb-3">
+                  &ldquo;{currentTab.broadcastMessage}&rdquo;
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--border-token)]">
+                <span className="text-[12px] font-medium text-[var(--muted-foreground)]">
+                  Dispatched to {currentTab.complaintCount} residents
+                </span>
+                <Link
+                  href="/committee"
+                  className="inline-flex items-center gap-1 text-[13px] font-bold text-[var(--ink)] hover:underline"
+                >
+                  <span>Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
 
           </div>
 
-          {/* Benefits strip — min 14px for all text */}
+          {/* Bottom 4-Column Feature Strip (Lucide icons, no emojis) */}
           <div className="border-t border-[var(--border-token)] bg-[var(--surface-2)] px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center gap-1">
               <Droplets className="w-5 h-5 text-[var(--ink)]" />
-              <span className="text-[14px] font-semibold text-[var(--ink)]">Water &amp; power</span>
-              <span className="text-[14px] text-[var(--muted-foreground)]">Pump trip alerts</span>
+              <span className="text-[13px] font-bold text-[var(--ink)]">Water &amp; utilities</span>
+              <span className="text-[12px] text-[var(--muted-foreground)]">Instant pump trip alerts</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <Zap className="w-5 h-5 text-[var(--high)]" />
-              <span className="text-[14px] font-semibold text-[var(--ink)]">Lift emergencies</span>
-              <span className="text-[14px] text-[var(--muted-foreground)]">Clear escalation path</span>
+              <ArrowUpDown className="w-5 h-5 text-[var(--high)]" />
+              <span className="text-[13px] font-bold text-[var(--ink)]">Lift emergencies</span>
+              <span className="text-[12px] text-[var(--muted-foreground)]">Escalation to technician</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <Volume2 className="w-5 h-5 text-[var(--low)]" />
-              <span className="text-[14px] font-semibold text-[var(--ink)]">Noise &amp; parking</span>
-              <span className="text-[14px] text-[var(--muted-foreground)]">Rule violation tracking</span>
+              <span className="text-[13px] font-bold text-[var(--ink)]">Noise &amp; parking</span>
+              <span className="text-[12px] text-[var(--muted-foreground)]">Rule tracking &amp; security</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <Users className="w-5 h-5 text-[var(--ink)]" />
-              <span className="text-[14px] font-semibold text-[var(--ink)]">No missed complaints</span>
-              <span className="text-[14px] text-[var(--muted-foreground)]">Every report is logged</span>
+              <span className="text-[13px] font-bold text-[var(--ink)]">Zero missed complaints</span>
+              <span className="text-[12px] text-[var(--muted-foreground)]">Auditable society log</span>
             </div>
           </div>
 
         </div>
+
       </div>
     </BackgroundBeamsWithCollision>
   );
