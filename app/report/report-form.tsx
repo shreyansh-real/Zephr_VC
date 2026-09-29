@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { UrgencyChip, CategoryChip, type UrgencyLevel, type CategoryType } from "@/components/urgency";
 import {
   CheckCircle2,
@@ -21,6 +21,8 @@ import {
   Loader2,
   Check,
   Globe2,
+  CornerDownLeft,
+  Flame,
 } from "lucide-react";
 
 interface SuccessData {
@@ -30,13 +32,21 @@ interface SuccessData {
   cluster_size: number;
 }
 
-const QUICK_CATEGORIES = [
-  { label: "Water supply", icon: Droplets, template: "No water supply or low water pressure in flat tap." },
-  { label: "Elevator / Lift", icon: ArrowUpDown, template: "Lift is not responding, stuck, or making grinding noise." },
-  { label: "Electricity / Power", icon: Zap, template: "Power failure in corridor / common area lights not working." },
-  { label: "Noise / Bylaws", icon: Volume2, template: "Loud noise / party disturbance past 10:30 PM quiet hours." },
-  { label: "Garbage / Cleanliness", icon: Trash2, template: "Garbage not collected from floor corridor today." },
-  { label: "Gate & Security", icon: ShieldAlert, template: "Visitor barrier / security gate issue at entrance." },
+interface QuickCategory {
+  id: string;
+  label: string;
+  icon: typeof Droplets;
+  category: CategoryType;
+  template: string;
+}
+
+const QUICK_CATEGORIES: QuickCategory[] = [
+  { id: "water", label: "Water Supply", icon: Droplets, category: "Water", template: "No water supply or very low pressure in the flat." },
+  { id: "lift", label: "Lift / Elevator", icon: ArrowUpDown, category: "Lift", template: "Elevator stuck or malfunctioning on our floor." },
+  { id: "power", label: "Common Power", icon: Zap, category: "Other", template: "Corridor / stairway lights not working." },
+  { id: "noise", label: "Noise Disturbance", icon: Volume2, category: "Noise", template: "Loud noise / construction work during quiet hours." },
+  { id: "clean", label: "Cleanliness", icon: Trash2, category: "Cleaning", template: "Garbage / debris not cleared from the corridor." },
+  { id: "security", label: "Security & Gate", icon: ShieldAlert, category: "Security", template: "Main gate barrier or security sensor issue." },
 ];
 
 export function ReportForm() {
@@ -44,53 +54,91 @@ export function ReportForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [text, setText] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [success, setSuccess] = useState<SuccessData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isMac, setIsMac] = useState(false);
 
-  // Auto-detect language
-  const detectedLanguage = useMemo(() => {
-    if (!text.trim()) return null;
-    if (/[^\u0000-\u007F]/.test(text)) return "Hindi";
-    if (/\b(pani|paani|bhai|yaar|dekh|karo|nahi|nhi|hai|ho|aarha|gaya|kripya)\b/i.test(text)) {
-      return "Hinglish";
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setIsMac(typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent));
+  }, []);
+
+  // Cycle loading status text for smooth AI feedback
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStep(0);
+      return;
     }
-    return "English";
+    const interval = setInterval(() => {
+      setLoadingStep((prev) => (prev + 1) % 3);
+    }, 900);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // Real-time language and AI triage heuristics
+  const liveAnalysis = useMemo(() => {
+    const raw = text.trim();
+    if (!raw) return null;
+
+    let lang = "English";
+    if (/[^\u0000-\u007F]/.test(raw)) {
+      lang = "Hindi";
+    } else if (/\b(pani|paani|bhai|yaar|dekh|karo|nahi|nhi|hai|ho|aarha|aaraha|gaya|kripya|bijli|awaaz|shor)\b/i.test(raw)) {
+      lang = "Hinglish";
+    }
+
+    let detectedCat: CategoryType = "Other";
+    const lower = raw.toLowerCase();
+    if (/\b(water|tap|leak|pipe|supply|paani|pani|tank)\b/i.test(lower)) detectedCat = "Water";
+    else if (/\b(lift|elevator|stuck)\b/i.test(lower)) detectedCat = "Lift";
+    else if (/\b(noise|loud|music|party|shor|awaaz)\b/i.test(lower)) detectedCat = "Noise";
+    else if (/\b(garbage|trash|clean|smell|dirty|kachra)\b/i.test(lower)) detectedCat = "Cleaning";
+    else if (/\b(gate|security|guard|barrier|camera|theft)\b/i.test(lower)) detectedCat = "Security";
+    else if (/\b(power|light|electricity|bulb|wire|meter|bijli)\b/i.test(lower)) detectedCat = "Other";
+
+    const isUrgent = /\b(emergency|urgent|danger|stuck|overflow|fire|burst|current|shock|critical|immediately)\b/i.test(lower);
+
+    return {
+      lang,
+      detectedCat,
+      isUrgent,
+    };
   }, [text]);
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
     const cleanFlat = flatNo.trim();
     if (!cleanFlat) {
-      errs.flat_no = "Flat number is required (e.g. A-402, C-220)";
+      errs.flat_no = "Required (e.g. C-220)";
     } else if (!/^[A-Za-z0-9][-A-Za-z0-9]{0,9}$/.test(cleanFlat)) {
-      errs.flat_no = "Invalid format (e.g. A-402, B-101, or 204)";
+      errs.flat_no = "Invalid format";
     }
 
     if (!name.trim()) {
-      errs.resident_name = "Name / Resident alias is required";
+      errs.resident_name = "Name / alias required";
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errs.email = "Please enter a valid email address (e.g. resident@gmail.com)";
+      errs.email = "Invalid email format";
     }
 
     const cleanText = text.trim();
     if (!cleanText) {
-      errs.raw_text = "Please describe the problem in any language";
-    } else if (cleanText.length < 8) {
-      errs.raw_text = "Please provide at least 8 characters describing the issue";
-    } else if (cleanText.length > 1000) {
-      errs.raw_text = "Complaint must be at most 1000 characters";
+      errs.raw_text = "Please describe the problem";
+    } else if (cleanText.length < 6) {
+      errs.raw_text = "Min 6 characters required";
     }
 
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitComplaint() {
     if (!validate()) return;
     setLoading(true);
     setError(null);
@@ -108,23 +156,39 @@ export function ReportForm() {
       });
       const data = (await res.json()) as SuccessData & { error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(data.error ?? "Submission failed. Please try again.");
       } else {
         setSuccess(data);
       }
     } catch {
-      setError("Unable to connect to server. Your text is saved, please retry.");
+      setError("Network error. Please verify your connection.");
     } finally {
       setLoading(false);
     }
   }
 
-  // Quick preset loader
-  function handlePreset(template: string) {
-    setText((prev) => (prev ? `${prev} — ${template}` : template));
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitComplaint();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      submitComplaint();
+    }
+  }
+
+  function handlePresetSelect(preset: QuickCategory) {
+    setActiveCategory(preset.id);
+    setText((prev) => {
+      if (!prev) return preset.template;
+      return `${prev}\n${preset.template}`;
+    });
     if (fieldErrors.raw_text) {
       setFieldErrors((prev) => ({ ...prev, raw_text: "" }));
     }
+    textareaRef.current?.focus();
   }
 
   if (success) {
@@ -132,23 +196,26 @@ export function ReportForm() {
       <div
         role="status"
         aria-live="polite"
-        className="rounded-3xl border-2 border-[var(--border-strong)] bg-[var(--surface)] p-6 sm:p-8 md:p-10 shadow-xl max-w-[760px] mx-auto animate-in fade-in zoom-in-95 duration-200"
+        className="relative rounded-2xl border-2 border-[var(--border-strong)] bg-[var(--surface)] p-6 sm:p-8 shadow-2xl max-w-[660px] mx-auto animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0">
-            <CheckCircle2 size={32} className="text-[var(--resolved)]" />
+        {/* Top Glow Accent */}
+        <div className="absolute top-0 left-8 right-8 h-1 bg-[var(--resolved)] rounded-full" />
+
+        <div className="flex items-center gap-3.5 mb-5 pt-1">
+          <div className="w-12 h-12 rounded-xl bg-[var(--resolved-tint)] border border-[var(--resolved)] flex items-center justify-center shrink-0">
+            <CheckCircle2 size={26} className="text-[var(--resolved)]" />
           </div>
           <div>
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-[var(--resolved)] mb-0.5">
-              <Check size={14} /> Logged &amp; Triaged by AI
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--resolved)]">
+              <Check size={13} strokeWidth={3} /> Triaged &amp; Dispatched
             </span>
-            <h2 className="font-display font-extrabold text-[24px] sm:text-[30px] leading-tight text-[var(--ink)]">
-              Complaint registered successfully.
+            <h2 className="font-display font-extrabold text-[22px] sm:text-[24px] leading-tight text-[var(--ink)]">
+              Complaint Registered
             </h2>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-token)] my-6 flex flex-col gap-3.5">
+        <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] my-5 flex flex-col gap-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <CategoryChip category={success.category as CategoryType} />
@@ -157,25 +224,30 @@ export function ReportForm() {
             <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-token)]">
               {success.cluster_size > 1
                 ? `Grouped with ${success.cluster_size - 1} neighbor report${success.cluster_size > 2 ? "s" : ""}`
-                : "New collective ticket created"}
+                : "Single issue ticket created"}
             </span>
           </div>
 
-          <p className="text-[16px] font-semibold text-[var(--ink)] leading-snug">
-            {success.summary}
-          </p>
+          <div className="pt-2 border-t border-[var(--border-token)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              AI Summary &amp; Status
+            </p>
+            <p className="text-[14px] font-semibold text-[var(--ink)] leading-snug">
+              {success.summary}
+            </p>
+          </div>
 
           {email && (
-            <div className="text-[13px] text-[var(--muted-foreground)] flex items-center gap-2 pt-3 border-t border-[var(--border-token)]">
+            <div className="text-[12px] text-[var(--muted-foreground)] flex items-center gap-2 pt-2 border-t border-[var(--border-token)]">
               <Mail size={14} className="text-[var(--ink)] shrink-0" />
               <span>
-                Status and volunteer assignment updates will be sent to <strong className="text-[var(--ink)]">{email}</strong>
+                Status notifications dispatched to <strong className="text-[var(--ink)]">{email}</strong>
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
+        <div className="flex items-center justify-between gap-3 pt-2">
           <button
             type="button"
             onClick={() => {
@@ -184,70 +256,85 @@ export function ReportForm() {
               setName("");
               setEmail("");
               setText("");
+              setActiveCategory(null);
               setFieldErrors({});
             }}
-            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-bold text-[14px] border-2 border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] hover:border-[var(--ink)] transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl font-bold text-[13px] border border-[var(--border-token)] text-[var(--ink)] bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all cursor-pointer shadow-sm"
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={15} />
             Submit another complaint
           </button>
 
           <a
             href="/"
-            className="inline-flex items-center justify-center h-12 px-6 rounded-xl font-bold text-[14px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 transition-all text-center"
+            className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-bold text-[13px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.98] transition-all text-center shadow-sm"
           >
-            Return to home
+            View Live Dashboard
           </a>
         </div>
       </div>
     );
   }
 
+  const loadingMessages = [
+    "Reading & analyzing issue...",
+    "Running multi-lingual AI triage...",
+    "Matching neighbor clusters...",
+  ];
+
   return (
-    <div className="relative max-w-[800px] mx-auto">
-      {/* Visual focus ambient frame */}
-      <div className="absolute -inset-1.5 rounded-[32px] bg-gradient-to-b from-[var(--border-token)] to-transparent opacity-60 blur-[1px] pointer-events-none" />
+    <div className="relative w-full">
+      {/* Visual focus ambient aura around the form to give it primary hierarchy */}
+      <div className="absolute -inset-1 sm:-inset-1.5 rounded-[26px] bg-gradient-to-b from-[var(--border-strong)]/20 via-[var(--border-token)]/40 to-transparent blur-sm pointer-events-none" />
 
       {/* Main High-Performance Form Card */}
       <form
         onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
         noValidate
-        className="relative rounded-3xl border-2 border-[var(--border-token)] bg-[var(--surface)] p-6 sm:p-8 md:p-10 shadow-xl flex flex-col gap-6"
+        className="relative rounded-2xl border-2 border-[var(--border-strong)] bg-[var(--surface)] p-5 sm:p-7 md:p-8 shadow-xl flex flex-col gap-4"
       >
-        {/* Card Header & Priority Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[var(--border-token)]">
+        {/* Form Top Banner: Primary Title + Live Indicator */}
+        <div className="flex items-start sm:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-token)]">
           <div>
-            <div className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[var(--ink)] mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-[var(--resolved)] animate-pulse" />
-              Resident Service Portal
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                Resident Helpdesk Form
+              </span>
             </div>
-            <h2 className="font-display font-black text-[22px] sm:text-[26px] text-[var(--ink)] tracking-tight">
-              Report an Issue to Committee
+            <h2 className="font-display font-extrabold text-[20px] sm:text-[22px] text-[var(--ink)] tracking-tight leading-none">
+              Report an Issue
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 text-[12px] font-semibold text-[var(--muted-foreground)] bg-[var(--surface-2)] px-3 py-1.5 rounded-xl border border-[var(--border-token)] self-start sm:self-auto">
-            <Globe2 size={14} className="text-[var(--ink)]" />
-            <span>Type in Hindi, English, or Hinglish</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--ink)] bg-[var(--surface-2)] px-2.5 py-1 rounded-lg border border-[var(--border-token)] shrink-0">
+            <Globe2 size={13} className="text-[var(--ink)]" />
+            <span>Multilingual NLP</span>
           </div>
         </div>
 
-        {/* Quick Problem Category Switchers */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[12px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center gap-1.5">
-            <Sparkles size={13} className="text-[var(--high)]" /> Quick templates (click to add):
+        {/* Quick Issue Selector Pills */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center gap-1">
+            <Sparkles size={12} className="text-[var(--high)]" /> Quick Presets (Click to autofill)
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
             {QUICK_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
+              const isSelected = activeCategory === cat.id;
               return (
                 <button
-                  key={cat.label}
+                  key={cat.id}
                   type="button"
-                  onClick={() => handlePreset(cat.template)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold border border-[var(--border-token)] bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--border-token)] hover:border-[var(--ink)] transition-all text-left cursor-pointer active:scale-[0.98]"
+                  onClick={() => handlePresetSelect(cat)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-bold border text-left transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[var(--ink)] text-[var(--ink-inverse)] border-[var(--ink)] shadow-xs"
+                      : "bg-[var(--surface-2)] text-[var(--ink)] border-[var(--border-token)] hover:border-[var(--ink)] hover:bg-[var(--surface)]"
+                  }`}
                 >
-                  <Icon size={14} className="text-[var(--muted-foreground)] shrink-0" />
+                  <Icon size={14} className={isSelected ? "text-[var(--ink-inverse)]" : "text-[var(--muted-foreground)]"} />
                   <span className="truncate">{cat.label}</span>
                 </button>
               );
@@ -255,14 +342,19 @@ export function ReportForm() {
           </div>
         </div>
 
-        {/* Row 1: Flat No + Name */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Row 1: Flat No + Resident Name */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {/* Flat Number */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="flat_no" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <Building2 size={15} className="text-[var(--muted-foreground)]" />
-              Flat / Unit number <span className="text-[var(--critical)]">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="flat_no" className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-1.5">
+                <Building2 size={14} className="text-[var(--muted-foreground)]" />
+                Flat / Unit Number <span className="text-[var(--critical)]">*</span>
+              </label>
+              {fieldErrors.flat_no && (
+                <span className="text-[11px] font-semibold text-[var(--critical)]">{fieldErrors.flat_no}</span>
+              )}
+            </div>
             <input
               id="flat_no"
               type="text"
@@ -271,27 +363,26 @@ export function ReportForm() {
                 setFlatNo(e.target.value.toUpperCase());
                 if (fieldErrors.flat_no) setFieldErrors((p) => ({ ...p, flat_no: "" }));
               }}
-              placeholder="e.g. C-220, A-101"
+              placeholder="e.g. C-220, B-402, Villa 12"
               disabled={loading}
-              aria-describedby={fieldErrors.flat_no ? "flat_no_err" : undefined}
-              className={`h-12 px-4 rounded-xl bg-[var(--bg)] border text-[15px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
+              className={`h-10.5 px-3.5 rounded-xl bg-[var(--bg)] border text-[14px] font-semibold text-[var(--ink)] placeholder:text-[var(--muted-foreground)]/70 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
                 fieldErrors.flat_no ? "border-[var(--critical)] bg-[var(--critical-tint)]/20" : "border-[var(--border-token)]"
               }`}
               autoComplete="off"
             />
-            {fieldErrors.flat_no && (
-              <p id="flat_no_err" className="text-[12px] font-semibold text-[var(--critical)] flex items-center gap-1">
-                <AlertCircle size={13} /> {fieldErrors.flat_no}
-              </p>
-            )}
           </div>
 
           {/* Resident Name */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="resident_name" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <User size={15} className="text-[var(--muted-foreground)]" />
-              Resident Name / Alias <span className="text-[var(--critical)]">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="resident_name" className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-1.5">
+                <User size={14} className="text-[var(--muted-foreground)]" />
+                Resident Name / Alias <span className="text-[var(--critical)]">*</span>
+              </label>
+              {fieldErrors.resident_name && (
+                <span className="text-[11px] font-semibold text-[var(--critical)]">{fieldErrors.resident_name}</span>
+              )}
+            </div>
             <input
               id="resident_name"
               type="text"
@@ -300,32 +391,26 @@ export function ReportForm() {
                 setName(e.target.value);
                 if (fieldErrors.resident_name) setFieldErrors((p) => ({ ...p, resident_name: "" }));
               }}
-              placeholder="e.g. Sharma / Resident"
+              placeholder="e.g. Rahul Sharma / Resident"
               disabled={loading}
-              aria-describedby={fieldErrors.resident_name ? "name_err" : undefined}
-              className={`h-12 px-4 rounded-xl bg-[var(--bg)] border text-[15px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
+              className={`h-10.5 px-3.5 rounded-xl bg-[var(--bg)] border text-[14px] font-semibold text-[var(--ink)] placeholder:text-[var(--muted-foreground)]/70 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
                 fieldErrors.resident_name ? "border-[var(--critical)] bg-[var(--critical-tint)]/20" : "border-[var(--border-token)]"
               }`}
               autoComplete="name"
             />
-            {fieldErrors.resident_name && (
-              <p id="name_err" className="text-[12px] font-semibold text-[var(--critical)] flex items-center gap-1">
-                <AlertCircle size={13} /> {fieldErrors.resident_name}
-              </p>
-            )}
           </div>
         </div>
 
-        {/* Row 2: Email (Optional for updates) */}
+        {/* Row 2: Email (Optional) */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="resident_email" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <Mail size={15} className="text-[var(--muted-foreground)]" />
-              Email address <span className="text-[11px] font-normal text-[var(--muted-foreground)]">(Optional)</span>
+            <label htmlFor="resident_email" className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-1.5">
+              <Mail size={14} className="text-[var(--muted-foreground)]" />
+              Email Address <span className="text-[11px] font-normal text-[var(--muted-foreground)]">(Optional — for resolution updates)</span>
             </label>
-            <span className="text-[11px] text-[var(--muted-foreground)] font-medium">
-              Receive status &amp; resolution updates
-            </span>
+            {fieldErrors.email && (
+              <span className="text-[11px] font-semibold text-[var(--critical)]">{fieldErrors.email}</span>
+            )}
           </div>
           <input
             id="resident_email"
@@ -337,88 +422,92 @@ export function ReportForm() {
             }}
             placeholder="e.g. resident@example.com"
             disabled={loading}
-            aria-describedby={fieldErrors.email ? "email_err" : "email_hint"}
-            className={`h-12 px-4 rounded-xl bg-[var(--bg)] border text-[15px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
+            className={`h-10.5 px-3.5 rounded-xl bg-[var(--bg)] border text-[14px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)]/70 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent ${
               fieldErrors.email ? "border-[var(--critical)] bg-[var(--critical-tint)]/20" : "border-[var(--border-token)]"
             }`}
             autoComplete="email"
           />
-          {fieldErrors.email && (
-            <p id="email_err" className="text-[12px] font-semibold text-[var(--critical)] flex items-center gap-1">
-              <AlertCircle size={13} /> {fieldErrors.email}
-            </p>
-          )}
         </div>
 
-        {/* Row 3: Complaint Description with Live Language Badge */}
-        <div className="flex flex-col gap-2">
+        {/* Row 3: Complaint Description */}
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="raw_text" className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-1.5">
-              <MessageSquareText size={15} className="text-[var(--muted-foreground)]" />
-              Describe what happened <span className="text-[var(--critical)]">*</span>
+            <label htmlFor="raw_text" className="text-[12px] font-bold text-[var(--ink)] flex items-center gap-1.5">
+              <MessageSquareText size={14} className="text-[var(--muted-foreground)]" />
+              Describe Issue <span className="text-[var(--critical)]">*</span>
             </label>
-            <div className="flex items-center gap-2">
-              {detectedLanguage && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)]">
-                  {detectedLanguage}
+            <div className="flex items-center gap-2 font-mono text-[11px] text-[var(--muted-foreground)]">
+              {liveAnalysis && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)] font-sans font-semibold text-[10px]">
+                  {liveAnalysis.lang}
+                  {liveAnalysis.isUrgent && (
+                    <span className="flex items-center gap-0.5 text-[var(--critical)] font-bold">
+                      <Flame size={10} /> Urgent
+                    </span>
+                  )}
                 </span>
               )}
-              <span className="text-[11px] text-[var(--muted-foreground)] font-mono">
-                {text.length}/1000
-              </span>
+              <span>{text.length}/1000</span>
             </div>
           </div>
+
           <textarea
             id="raw_text"
+            ref={textareaRef}
             value={text}
             onChange={(e) => {
               setText(e.target.value);
               if (fieldErrors.raw_text) setFieldErrors((p) => ({ ...p, raw_text: "" }));
             }}
-            placeholder="Type your complaint freely in Hindi, English, or Hinglish (e.g. 'C-220 me tap water nahi aaraha subah se... please fix it fast!')"
+            placeholder="Type in English, Hindi, or Hinglish (e.g., 'C-220 me subah se pani nahi aa raha hai. Please send plumber.')"
             disabled={loading}
             rows={4}
             maxLength={1000}
-            aria-describedby={fieldErrors.raw_text ? "text_err" : undefined}
-            className={`min-h-[120px] px-4 py-3.5 rounded-xl bg-[var(--bg)] border text-[15px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent resize-y ${
+            className={`min-h-[96px] max-h-[160px] px-3.5 py-2.5 rounded-xl bg-[var(--bg)] border text-[14px] font-medium text-[var(--ink)] placeholder:text-[var(--muted-foreground)]/70 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--ink)] focus:border-transparent resize-none leading-relaxed ${
               fieldErrors.raw_text ? "border-[var(--critical)] bg-[var(--critical-tint)]/20" : "border-[var(--border-token)]"
             }`}
-            style={{ lineHeight: 1.6 }}
           />
 
           {fieldErrors.raw_text && (
-            <p id="text_err" className="text-[12px] font-semibold text-[var(--critical)] flex items-center gap-1">
-              <AlertCircle size={13} /> {fieldErrors.raw_text}
+            <p className="text-[11px] font-semibold text-[var(--critical)] flex items-center gap-1 mt-0.5">
+              <AlertCircle size={12} /> {fieldErrors.raw_text}
             </p>
           )}
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl border border-[var(--critical)] bg-[var(--critical-tint)]" role="alert">
-            <p className="text-[13px] text-[var(--critical)] font-semibold flex items-center gap-1.5">
-              <AlertCircle size={16} /> {error}
+          <div className="p-3 rounded-xl border border-[var(--critical)] bg-[var(--critical-tint)]" role="alert">
+            <p className="text-[12px] text-[var(--critical)] font-semibold flex items-center gap-2">
+              <AlertCircle size={15} /> {error}
             </p>
           </div>
         )}
 
-        {/* Primary Submit Action */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="h-14 px-8 rounded-xl font-bold text-[16px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2.5 focus:outline-none focus:ring-4 focus:ring-[var(--border-strong)] disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer mt-1"
-        >
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Analyzing &amp; Grouping with AI…</span>
-            </div>
-          ) : (
-            <>
-              <span>Submit Issue to Committee</span>
-              <Send size={16} />
-            </>
-          )}
-        </button>
+        {/* Primary Submit Action with Keyboard hint */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-[var(--muted-foreground)]">
+            <CornerDownLeft size={12} />
+            <span>Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--surface-2)] border border-[var(--border-token)] font-mono text-[10px] text-[var(--ink)] font-bold">{isMac ? "⌘ + Enter" : "Ctrl + Enter"}</kbd> to submit</span>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="h-12 px-7 rounded-xl font-bold text-[14px] bg-[var(--ink)] text-[var(--ink-inverse)] hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[var(--border-token)] disabled:opacity-60 disabled:cursor-not-allowed shadow-md cursor-pointer ml-auto w-full sm:w-auto"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{loadingMessages[loadingStep]}</span>
+              </div>
+            ) : (
+              <>
+                <span>Submit to Committee</span>
+                <Send size={15} />
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
