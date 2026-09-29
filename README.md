@@ -40,9 +40,10 @@ Required:
 Optional (for realtime dashboard updates):
 - `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID` — Firebase client SDK (web app config)
 
-Email Dispatch (Resend):
-- `RESEND_API_KEY` — API key from https://resend.com for emailing residents updates
-- `RESEND_FROM_EMAIL` — Verified sender email (e.g. `Sochi Society <onboarding@resend.dev>`)
+Email Dispatch (Gmail SMTP via Nodemailer):
+- `GMAIL_USER` — Your Gmail address (e.g. `society.committee@gmail.com`)
+- `GMAIL_APP_PASSWORD` — 16-character Google App Password (generate at https://myaccount.google.com/apppasswords)
+- *(Optional fallback)* `RESEND_API_KEY` + `RESEND_FROM_EMAIL`
 
 ### 3. Firebase setup
 

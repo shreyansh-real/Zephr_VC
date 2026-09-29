@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { getDb, Timestamp } from "@/lib/firebase-admin";
 import { requirePasscode } from "@/lib/auth";
@@ -52,7 +53,7 @@ export async function POST(req: Request, { params }: Params) {
     }
   }
 
-  // Filter for docs with emails
+  // Filter for docs with valid emails
   const recipients: Array<{ id: string; email: string; name: string; flat: string; ref: FirebaseFirestore.DocumentReference }> = [];
   for (const doc of targetDocs) {
     const data = doc.data();
@@ -74,16 +75,57 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 
-  // 4. Send email via Resend
+  // 4. Send email via Gmail Nodemailer or Resend
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Sochi Society <onboarding@resend.dev>";
-  const emailSubject = subject || `Update: ${clusterTitle}`;
 
+  const emailSubject = subject || `Update: ${clusterTitle}`;
   let successCount = 0;
   const sentEmails: string[] = [];
 
-  if (resendApiKey) {
+  if (gmailUser && gmailPass) {
+    // ── Primary: Direct Gmail SMTP via Nodemailer ──
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+    });
+
+    for (const recipient of recipients) {
+      try {
+        const htmlBody = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+            <div style="margin-bottom: 20px;">
+              <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280;">Society Committee Update</span>
+              <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin: 6px 0 0 0;">${clusterTitle}</h2>
+            </div>
+            <p style="font-size: 15px; color: #374151; margin-bottom: 16px;">Hello <strong>${recipient.name}</strong> (Flat ${recipient.flat}),</p>
+            <div style="background-color: #f9fafb; border-left: 4px solid #111827; padding: 16px; border-radius: 6px; font-size: 15px; line-height: 1.6; color: #1f2937; margin-bottom: 20px; white-space: pre-wrap;">${message}</div>
+            <p style="font-size: 13px; color: #9ca3af; margin: 0; border-top: 1px solid #f3f4f6; padding-top: 16px;">Sent by your Society Management Committee via Sochi.</p>
+          </div>
+        `;
+
+        await transporter.sendMail({
+          from: `"Sochi Society Committee" <${gmailUser}>`,
+          to: recipient.email,
+          subject: emailSubject,
+          text: `Hello ${recipient.name} (Flat ${recipient.flat}),\n\n${message}\n\n— Society Management Committee`,
+          html: htmlBody,
+        });
+
+        successCount++;
+        sentEmails.push(recipient.email);
+      } catch (err) {
+        console.error(`[Gmail SMTP] Failed to send email to ${recipient.email}:`, err);
+      }
+    }
+  } else if (resendApiKey) {
+    // ── Secondary: Resend fallback if configured ──
     const resend = new Resend(resendApiKey);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Sochi Society <onboarding@resend.dev>";
 
     for (const recipient of recipients) {
       try {
@@ -110,12 +152,12 @@ export async function POST(req: Request, { params }: Params) {
         successCount++;
         sentEmails.push(recipient.email);
       } catch (err) {
-        console.error(`Failed to send email to ${recipient.email}:`, err);
+        console.error(`[Resend] Failed to send email to ${recipient.email}:`, err);
       }
     }
   } else {
-    // If no Resend API key is configured in dev mode, simulate success and log to console
-    console.log(`[Dev Send-Email] RESEND_API_KEY not set. Simulated sending to:`, recipients.map((r) => r.email));
+    // ── Dev simulation mode when no keys are provided yet ──
+    console.log(`[Dev Send-Email] GMAIL_USER / GMAIL_APP_PASSWORD not set. Simulated sending to:`, recipients.map((r) => r.email));
     successCount = recipients.length;
     sentEmails.push(...recipients.map((r) => r.email));
   }
@@ -138,6 +180,6 @@ export async function POST(req: Request, { params }: Params) {
     sent_count: successCount,
     recipients: sentEmails,
     sent_at: now.toDate().toISOString(),
-    is_simulated: !resendApiKey,
+    is_simulated: !gmailUser && !resendApiKey,
   });
 }
