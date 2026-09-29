@@ -15,50 +15,12 @@ export const BackgroundBeamsWithCollision = ({
   const parentRef = useRef<HTMLDivElement>(null);
 
   const beams = [
-    {
-      initialX: 40,
-      translateX: 40,
-      duration: 6,
-      repeatDelay: 2,
-      delay: 1,
-    },
-    {
-      initialX: 250,
-      translateX: 250,
-      duration: 5,
-      repeatDelay: 3,
-      delay: 3,
-      className: "h-10",
-    },
-    {
-      initialX: 500,
-      translateX: 500,
-      duration: 7,
-      repeatDelay: 4,
-      className: "h-16",
-    },
-    {
-      initialX: 750,
-      translateX: 750,
-      duration: 4,
-      repeatDelay: 3,
-      delay: 2,
-    },
-    {
-      initialX: 950,
-      translateX: 950,
-      duration: 8,
-      repeatDelay: 2,
-      className: "h-20",
-    },
-    {
-      initialX: 1150,
-      translateX: 1150,
-      duration: 5,
-      repeatDelay: 3,
-      delay: 1,
-      className: "h-12",
-    },
+    { initialX: 40,   translateX: 40,   duration: 6, repeatDelay: 2, delay: 1 },
+    { initialX: 250,  translateX: 250,  duration: 5, repeatDelay: 3, delay: 3,   className: "h-10" },
+    { initialX: 500,  translateX: 500,  duration: 7, repeatDelay: 4,              className: "h-16" },
+    { initialX: 750,  translateX: 750,  duration: 4, repeatDelay: 3, delay: 2 },
+    { initialX: 950,  translateX: 950,  duration: 8, repeatDelay: 2,              className: "h-20" },
+    { initialX: 1150, translateX: 1150, duration: 5, repeatDelay: 3, delay: 1,   className: "h-12" },
   ];
 
   return (
@@ -79,6 +41,8 @@ export const BackgroundBeamsWithCollision = ({
       ))}
 
       {children}
+
+      {/* Collision target sits flush at the very bottom of the section */}
       <div
         ref={containerRef}
         className="absolute bottom-0 w-full inset-x-0 pointer-events-none h-px"
@@ -110,12 +74,26 @@ const CollisionMechanism = ({
   const [collision, setCollision] = useState<{
     detected: boolean;
     coordinates: { x: number; y: number } | null;
-  }>({
-    detected: false,
-    coordinates: null,
-  });
+  }>({ detected: false, coordinates: null });
   const [beamKey, setBeamKey] = useState(0);
   const [cycleCollisionDetected, setCycleCollisionDetected] = useState(false);
+
+  // Measure how far the beam needs to travel so it always reaches the bottom
+  const [travelY, setTravelY] = useState("1800px");
+
+  useEffect(() => {
+    const measure = () => {
+      if (parentRef.current && beamRef.current) {
+        const parentH = parentRef.current.getBoundingClientRect().height;
+        const beamH = beamRef.current.getBoundingClientRect().height;
+        // Start fully above the top, end fully below the bottom
+        setTravelY(`${parentH + beamH + 32}px`);
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [parentRef]);
 
   useEffect(() => {
     const checkCollision = () => {
@@ -136,10 +114,7 @@ const CollisionMechanism = ({
 
           setCollision({
             detected: true,
-            coordinates: {
-              x: relativeX,
-              y: relativeY,
-            },
+            coordinates: { x: relativeX, y: relativeY },
           });
           setCycleCollisionDetected(true);
         }
@@ -158,7 +133,7 @@ const CollisionMechanism = ({
       }, 1800);
 
       const t2 = setTimeout(() => {
-        setBeamKey((prevKey) => prevKey + 1);
+        setBeamKey((prev) => prev + 1);
       }, 1800);
 
       return () => {
@@ -175,24 +150,24 @@ const CollisionMechanism = ({
         ref={beamRef}
         animate="animate"
         initial={{
-          translateY: beamOptions.initialY || "-150px",
-          translateX: beamOptions.initialX || "0px",
-          rotate: beamOptions.rotate || 0,
+          translateY: beamOptions.initialY ?? "-150px",
+          translateX: beamOptions.initialX ?? "0px",
+          rotate: beamOptions.rotate ?? 0,
         }}
         variants={{
           animate: {
-            translateY: beamOptions.translateY || "1400px",
-            translateX: beamOptions.translateX || "0px",
-            rotate: beamOptions.rotate || 0,
+            translateY: beamOptions.translateY ?? travelY,
+            translateX: beamOptions.translateX ?? "0px",
+            rotate: beamOptions.rotate ?? 0,
           },
         }}
         transition={{
-          duration: beamOptions.duration || 6,
+          duration: beamOptions.duration ?? 6,
           repeat: Infinity,
           repeatType: "loop",
           ease: "linear",
-          delay: beamOptions.delay || 0,
-          repeatDelay: beamOptions.repeatDelay || 0,
+          delay: beamOptions.delay ?? 0,
+          repeatDelay: beamOptions.repeatDelay ?? 0,
         }}
         className={cn(
           "absolute left-0 top-0 m-auto h-16 w-px rounded-full bg-gradient-to-t from-[var(--critical)] via-[var(--high)] to-transparent opacity-80",
@@ -237,11 +212,7 @@ const Explosion = ({ ...props }: React.HTMLProps<HTMLDivElement>) => {
         <motion.span
           key={span.id}
           initial={{ x: span.initialX, y: span.initialY, opacity: 1 }}
-          animate={{
-            x: span.directionX,
-            y: span.directionY,
-            opacity: 0,
-          }}
+          animate={{ x: span.directionX, y: span.directionY, opacity: 0 }}
           transition={{ duration: Math.random() * 1.2 + 0.4, ease: "easeOut" }}
           className="absolute h-1 w-1 rounded-full bg-gradient-to-b from-[var(--critical)] to-[var(--high)]"
         />
