@@ -27,8 +27,12 @@ export const metadata: Metadata = {
   title: "Sochi — Society Complaint Triage",
   description: "An inbox that reads, ranks, groups and answers society complaints.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: { url: "/logo.png", type: "image/png" },
+    shortcut: "/favicon.ico",
   },
 };
 
