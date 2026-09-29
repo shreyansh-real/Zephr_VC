@@ -31,7 +31,7 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
   const [isClient, setIsClient] = useState(false);
   const { resolvedTheme } = useTheme();
 
-  // Color theme matching website's warm palette
+  // Theme matching website's warm palette
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
     }
   }, [resolvedTheme, isClient]);
 
-  // Snappy multilingual word progression
+  // Multilingual word progression
   useEffect(() => {
     if (index === PRELOADER_WORDS.length - 1) return;
 
@@ -75,62 +75,42 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
     return () => clearTimeout(timeout);
   }, [index, duration]);
 
-  // Circular / half-shape arch path expanding from center towards all borders (N, S, E, W) and above
   const w = dimension.width || 1440;
   const h = dimension.height || 900;
 
-  // Initial state: full solid screen
-  const initialPath = `M 0 0 L ${w} 0 L ${w} ${h} L 0 ${h} Z`;
+  // Dennis Snellenberg curved upward SVG paths (organic circular half-shape bottom curve)
+  const initialPath = `M0 0 L${w} 0 L${w} ${h} Q${w / 2} ${h + 450} 0 ${h} L0 0`;
+  const targetPath = `M0 0 L${w} 0 L${w} ${h} Q${w / 2} ${h} 0 ${h} L0 0`;
 
-  // Exit state: Arched upward circular dome sweeping from center towards North, South, East, West borders
-  const exitPath = `M 0 0 L ${w} 0 L ${w} ${h} Q ${w / 2} -${h * 0.6} 0 ${h} Z`;
-
+  // Solid screen lifts upward (NO fade out)
   const containerVariants: Variants = {
     initial: {
-      opacity: 1,
+      y: "0%",
     },
     exit: {
-      opacity: 0,
+      y: "-100%",
       transition: {
         duration: 0.85,
         ease: BEZIER_EASE,
-        when: "afterChildren",
+        delay: 0.12,
       },
     },
   };
 
-  const svgVariants: Variants = {
+  const curveVariants: Variants = {
     initial: {
       d: initialPath,
-      scale: 1,
+      transition: { duration: 0.75, ease: BEZIER_EASE },
     },
     exit: {
-      d: exitPath,
-      y: -h * 0.35,
-      transition: {
-        duration: 0.75,
-        ease: BEZIER_EASE,
-      },
-    },
-  };
-
-  // Circular aperture mask opening outwards from center (North, South, East, West)
-  const maskVariants: Variants = {
-    initial: {
-      clipPath: "circle(150% at 50% 50%)",
-    },
-    exit: {
-      clipPath: "circle(0% at 50% 50%)",
-      transition: {
-        duration: 0.75,
-        ease: BEZIER_EASE,
-      },
+      d: targetPath,
+      transition: { duration: 0.75, ease: BEZIER_EASE, delay: 0.12 },
     },
   };
 
   const currentWord = PRELOADER_WORDS[index] ?? PRELOADER_WORDS[0];
 
-  // Exact website warm off-white (#F5EFE3 in light, #151514 in dark)
+  // Website warm palette (#F5EFE3 in light, #151514 in dark)
   const bgFill = isDark ? "#151514" : "#F5EFE3";
   const textColor = isDark ? "text-[#F7F3E9]" : "text-[#1A1A18]";
   const dotColor = isDark ? "bg-[#C2BDAF]" : "bg-[#524E40]";
@@ -145,37 +125,14 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
           onComplete();
         }
       }}
-      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center cursor-wait overflow-hidden select-none pointer-events-auto"
+      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center cursor-wait select-none pointer-events-auto"
       style={{
+        backgroundColor: bgFill,
         height: "100vh",
         width: "100vw",
       }}
     >
-      {/* Animated Circular / Half-shape SVG Dome Backdrop */}
-      {dimension.width > 0 && (
-        <motion.div
-          variants={maskVariants}
-          initial="initial"
-          exit="exit"
-          className="absolute inset-0 w-full h-full"
-          style={{ backgroundColor: bgFill }}
-        >
-          <svg
-            className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            viewBox={`0 0 ${w} ${h}`}
-            preserveAspectRatio="none"
-          >
-            <motion.path
-              variants={svgVariants}
-              initial="initial"
-              exit="exit"
-              fill={bgFill}
-            />
-          </svg>
-        </motion.div>
-      )}
-
-      {/* Center Cool Typography Word Display */}
+      {/* Center Typography Display */}
       <div className="relative z-20 flex flex-col items-center justify-center gap-4 px-6 text-center">
         <div className="h-24 sm:h-32 md:h-36 flex items-center justify-center overflow-hidden">
           <AnimatePresence mode="wait">
@@ -183,7 +140,7 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
               key={currentWord}
               initial={{ opacity: 0, scale: 0.85, y: 20, filter: "blur(6px)" }}
               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 1.12, y: -20, filter: "blur(6px)" }}
+              exit={{ opacity: 0, scale: 1.05, y: -25, filter: "blur(4px)" }}
               transition={{
                 duration: 0.18,
                 ease: WORD_EASE,
@@ -219,6 +176,21 @@ export function WordPreloader({ onComplete, duration = 1800 }: WordPreloaderProp
           ))}
         </div>
       </div>
+
+      {/* SVG Circular Half-Shape Curved Screen Flap at the bottom */}
+      {dimension.width > 0 && (
+        <svg
+          className="absolute top-0 pointer-events-none w-full"
+          style={{ height: "calc(100% + 450px)" }}
+        >
+          <motion.path
+            variants={curveVariants}
+            initial="initial"
+            exit="exit"
+            fill={bgFill}
+          />
+        </svg>
+      )}
     </motion.div>
   );
 }
