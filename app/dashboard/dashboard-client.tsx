@@ -8,7 +8,7 @@ import { ClusterDrawer } from "@/components/cluster-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, onSnapshot } from "firebase/firestore";
-import { AlertTriangle, Inbox, Clock, Filter, CheckSquare } from "lucide-react";
+import { AlertTriangle, Inbox, Clock, SlidersHorizontal, CheckSquare, X } from "lucide-react";
 
 interface Cluster {
   id: string;
@@ -35,77 +35,6 @@ interface Stats {
 const ALL_CATEGORIES = ["Water", "Lift", "Parking", "Cleaning", "Security", "Noise", "Other"];
 const ALL_URGENCIES = ["Critical", "High", "Medium", "Low"];
 const ALL_STATUSES = ["New", "Assigned", "In Progress", "Resolved"];
-
-function StatCard({
-  icon,
-  label,
-  value,
-  highlight,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center gap-3 px-5 py-4 rounded-xl border ${
-        highlight
-          ? "border-[var(--critical)] bg-[var(--critical-tint)]"
-          : "border-[var(--border-token)] bg-[var(--surface)]"
-      }`}
-    >
-      <span className={highlight ? "text-[var(--critical)]" : "text-[var(--muted-foreground)]"}>
-        {icon}
-      </span>
-      <div>
-        <p className="text-[13px] text-[var(--muted-foreground)] leading-none mb-1">{label}</p>
-        <p
-          className={`text-[22px] font-black leading-none tracking-tight ${
-            highlight ? "text-[var(--critical)]" : "text-[var(--ink)]"
-          }`}
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FilterSelect({
-  value,
-  onChange,
-  label,
-  options,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  label: string;
-  options: string[];
-  placeholder: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[12px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 px-3 rounded-lg border border-[var(--border-token)] bg-[var(--surface)] text-[14px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer min-w-[130px]"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 export function DashboardClient() {
   const router = useRouter();
@@ -149,10 +78,7 @@ export function DashboardClient() {
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch("/api/stats");
-      if (res.ok) {
-        const data = (await res.json()) as Stats;
-        setStats(data);
-      }
+      if (res.ok) setStats((await res.json()) as Stats);
     } catch { /* non-fatal */ }
   }, []);
 
@@ -173,11 +99,10 @@ export function DashboardClient() {
     }
     const app = getApps().length > 0 ? getApps()[0]! : initializeApp({ apiKey, projectId, appId });
     const db = getFirestore(app);
-    const unsubscribe = onSnapshot(doc(db, "meta", "lastChange"), () => {
+    return onSnapshot(doc(db, "meta", "lastChange"), () => {
       void fetchClusters();
       void fetchStats();
     });
-    return unsubscribe;
   }, [fetchClusters, fetchStats]);
 
   const handleUpdate = useCallback(() => {
@@ -185,7 +110,7 @@ export function DashboardClient() {
     void fetchStats();
   }, [fetchClusters, fetchStats]);
 
-  const hasActiveFilters = filterCategory || filterUrgency || filterStatus;
+  const hasActiveFilters = !!(filterCategory || filterUrgency || filterStatus);
 
   const avgLabel = stats?.avg_resolution_hours != null
     ? stats.avg_resolution_hours < 24
@@ -194,163 +119,190 @@ export function DashboardClient() {
     : "—";
 
   return (
+    /* Outer shell — sits to the right of the 82px wide left dock */
     <div className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
       <NavDock showLock showLive />
 
-      <main className="pl-[88px] pr-6 md:pr-10 py-8 max-w-[1400px]">
+      {/* Content area pushed clear of the dock (82px dock + 8px gap = 90px) */}
+      <div className="ml-[90px] min-h-screen flex flex-col">
 
-        {/* ── Page header ── */}
-        <div className="mb-8">
-          <h1 className="font-display font-black text-[32px] leading-none tracking-tight text-[var(--ink)] mb-1">
-            Society dashboard
-          </h1>
-          <p className="text-[15px] text-[var(--muted-foreground)]">
-            Palm Grove Heights RWA · live issues
-          </p>
-        </div>
-
-        {/* ── Stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-          <StatCard
-            icon={<Inbox size={20} />}
-            label="Open issues"
-            value={stats ? stats.open_count : "—"}
-          />
-          <StatCard
-            icon={<AlertTriangle size={20} />}
-            label="Critical"
-            value={stats ? stats.critical_count : "—"}
-            highlight={!!stats && stats.critical_count > 0}
-          />
-          <StatCard
-            icon={<Clock size={20} />}
-            label="Avg resolution"
-            value={avgLabel}
-          />
-        </div>
-
-        {/* ── Filters bar ── */}
-        <div className="flex flex-wrap items-end gap-4 mb-6 pb-5 border-b border-[var(--border-token)]">
-          <div className="flex items-center gap-2 text-[var(--muted-foreground)]">
-            <Filter size={15} />
-            <span className="text-[13px] font-semibold uppercase tracking-wider">Filters</span>
+        {/* ── Top header bar ── */}
+        <header className="sticky top-0 z-30 border-b border-[var(--border-token)] bg-[var(--surface)]/90 backdrop-blur-md px-8 py-4 flex items-center justify-between gap-6">
+          <div>
+            <h1 className="font-display font-black text-[22px] leading-none tracking-tight text-[var(--ink)]">
+              Society dashboard
+            </h1>
+            <p className="text-[13px] text-[var(--muted-foreground)] mt-0.5">
+              Palm Grove Heights RWA
+            </p>
           </div>
-          <FilterSelect
-            label="Category"
-            value={filterCategory}
-            onChange={setFilterCategory}
-            options={ALL_CATEGORIES}
-            placeholder="All categories"
-          />
-          <FilterSelect
-            label="Urgency"
-            value={filterUrgency}
-            onChange={setFilterUrgency}
-            options={ALL_URGENCIES}
-            placeholder="All urgencies"
-          />
-          <FilterSelect
-            label="Status"
-            value={filterStatus}
-            onChange={setFilterStatus}
-            options={ALL_STATUSES}
-            placeholder="All statuses"
-          />
-          <label className="flex items-center gap-2 text-[14px] text-[var(--muted-foreground)] cursor-pointer pb-0.5">
-            <input
-              type="checkbox"
-              checked={showResolved}
-              onChange={(e) => setShowResolved(e.target.checked)}
-              className="w-4 h-4 rounded border-[var(--border-token)] accent-[var(--ink)]"
-            />
-            Show resolved
-          </label>
-          {hasActiveFilters && (
-            <button
-              onClick={() => { setFilterCategory(""); setFilterUrgency(""); setFilterStatus(""); }}
-              className="text-[13px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--ink)] underline underline-offset-2 transition-colors pb-0.5"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
 
-        {/* ── Issue list ── */}
-        <section aria-label="Issues">
-
-          {/* Column header */}
-          {!loading && !error && clusters.length > 0 && (
-            <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_160px] gap-4 px-4 mb-2">
-              {["Issue", "Category", "Urgency", "Status", "Assignee / actions"].map((h) => (
-                <span key={h} className="text-[12px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-                  {h}
-                </span>
-              ))}
+          {/* Stat pills in header */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]">
+              <Inbox size={15} className="text-[var(--muted-foreground)]" />
+              <span className="text-[13px] text-[var(--muted-foreground)]">Open</span>
+              <span className="text-[15px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+                {stats ? stats.open_count : "—"}
+              </span>
             </div>
-          )}
 
-          {/* Skeleton */}
-          {loading && (
-            <div className="flex flex-col gap-2">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton
-                  key={i}
-                  className="h-16 rounded-xl"
-                  style={{ backgroundColor: "var(--surface-2)", opacity: 1 }}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="flex items-center justify-between p-5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)]">
-              <p className="text-[15px] text-[var(--ink)]">{error}</p>
-              <button
-                onClick={() => { setLoading(true); void fetchClusters(); }}
-                className="h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors focus:outline-none"
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+              stats && stats.critical_count > 0
+                ? "bg-[var(--critical-tint)] border-[var(--critical)]"
+                : "bg-[var(--surface-2)] border-[var(--border-token)]"
+            }`}>
+              <AlertTriangle size={15} className={stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--muted-foreground)]"} />
+              <span className="text-[13px] text-[var(--muted-foreground)]">Critical</span>
+              <span
+                className={`text-[15px] font-black ${stats && stats.critical_count > 0 ? "text-[var(--critical)]" : "text-[var(--ink)]"}`}
+                style={{ fontVariantNumeric: "tabular-nums" }}
               >
-                Retry
+                {stats ? stats.critical_count : "—"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]">
+              <Clock size={15} className="text-[var(--muted-foreground)]" />
+              <span className="text-[13px] text-[var(--muted-foreground)]">Avg fix</span>
+              <span className="text-[15px] font-black text-[var(--ink)]" style={{ fontVariantNumeric: "tabular-nums" }}>
+                {avgLabel}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Main content ── */}
+        <main className="flex-1 px-8 py-6 max-w-[1200px] w-full">
+
+          {/* ── Filter bar ── */}
+          <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border-token)]">
+            <SlidersHorizontal size={15} className="text-[var(--muted-foreground)] shrink-0" />
+
+            <select
+              value={filterUrgency}
+              onChange={(e) => setFilterUrgency(e.target.value)}
+              className="h-8 px-3 rounded-lg border border-[var(--border-token)] bg-[var(--bg)] text-[13px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer"
+              aria-label="Filter by urgency"
+            >
+              <option value="">All urgencies</option>
+              {ALL_URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="h-8 px-3 rounded-lg border border-[var(--border-token)] bg-[var(--bg)] text-[13px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer"
+              aria-label="Filter by category"
+            >
+              <option value="">All categories</option>
+              {ALL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-8 px-3 rounded-lg border border-[var(--border-token)] bg-[var(--bg)] text-[13px] text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--border-strong)] cursor-pointer"
+              aria-label="Filter by status"
+            >
+              <option value="">All statuses</option>
+              {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+
+            <label className="flex items-center gap-2 text-[13px] text-[var(--muted-foreground)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showResolved}
+                onChange={(e) => setShowResolved(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-[var(--border-token)] accent-[var(--ink)]"
+              />
+              Show resolved
+            </label>
+
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setFilterCategory(""); setFilterUrgency(""); setFilterStatus(""); }}
+                className="ml-auto flex items-center gap-1 h-8 px-3 rounded-lg text-[13px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
+              >
+                <X size={13} /> Clear
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Empty state */}
-          {!loading && !error && clusters.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 rounded-xl border border-dashed border-[var(--border-token)]">
-              <CheckSquare size={40} className="text-[var(--muted-foreground)] mb-3 opacity-40" />
-              <p className="text-[16px] font-semibold text-[var(--ink)] mb-1">No issues found</p>
-              <p className="text-[14px] text-[var(--muted-foreground)] mb-4">
-                {hasActiveFilters ? "Try clearing your filters." : "Share the report link with residents to start collecting issues."}
-              </p>
-              {!hasActiveFilters && (
+          {/* ── Issue table ── */}
+          <section aria-label="Issues">
+
+            {/* Table column headers — only show when data loaded */}
+            {!loading && !error && clusters.length > 0 && (
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-6 items-center px-4 mb-2 border-b border-[var(--border-token)] pb-2">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Issue</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] w-24 text-center">Urgency</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] w-24 text-center">Status</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] w-28 text-right">Actions</span>
+              </div>
+            )}
+
+            {/* Loading skeletons */}
+            {loading && (
+              <div className="flex flex-col gap-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-[68px] rounded-xl" style={{ backgroundColor: "var(--surface-2)", opacity: 1 }} />
+                ))}
+              </div>
+            )}
+
+            {/* Error state */}
+            {error && (
+              <div className="flex items-center justify-between p-5 rounded-xl border border-[var(--border-token)] bg-[var(--surface)]">
+                <p className="text-[15px] text-[var(--ink)]">{error}</p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(window.location.origin + "/report").catch(() => {}); }}
-                  className="h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors focus:outline-none"
+                  onClick={() => { setLoading(true); void fetchClusters(); }}
+                  className="h-9 px-4 rounded-lg font-semibold text-[14px] border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
                 >
-                  Copy report link
+                  Retry
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Issue rows */}
-          {!loading && !error && clusters.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {clusters.map((c) => (
-                <ClusterCard
-                  key={c.id}
-                  cluster={c}
-                  variant="row"
-                  onClick={() => setSelectedId(c.id)}
-                  onUpdate={handleUpdate}
-                  hasCountedRef={hasCountedRef}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
+            {/* Empty state */}
+            {!loading && !error && clusters.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 rounded-xl border border-dashed border-[var(--border-token)]">
+                <CheckSquare size={36} className="text-[var(--muted-foreground)] opacity-30 mb-3" />
+                <p className="text-[16px] font-semibold text-[var(--ink)] mb-1">
+                  {hasActiveFilters ? "No matching issues" : "No open issues"}
+                </p>
+                <p className="text-[14px] text-[var(--muted-foreground)] mb-5">
+                  {hasActiveFilters ? "Try adjusting or clearing your filters." : "Share the report link with residents."}
+                </p>
+                {!hasActiveFilters && (
+                  <button
+                    onClick={() => navigator.clipboard.writeText(window.location.origin + "/report").catch(() => {})}
+                    className="h-9 px-5 rounded-lg text-[14px] font-semibold border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
+                  >
+                    Copy report link
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Issue rows */}
+            {!loading && !error && clusters.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {clusters.map((c) => (
+                  <ClusterCard
+                    key={c.id}
+                    cluster={c}
+                    variant="row"
+                    onClick={() => setSelectedId(c.id)}
+                    onUpdate={handleUpdate}
+                    hasCountedRef={hasCountedRef}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
 
       {selectedId && (
         <ClusterDrawer
