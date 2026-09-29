@@ -279,154 +279,24 @@ export function DashboardClient() {
               <span className="hidden sm:inline">Refresh</span>
             </button>
 
-            {/* Notifications Popover / Mobile Drawer Toggle */}
-            <div className="relative">
-              <button
-                onClick={() => setNotificationsOpen((v) => !v)}
-                className={`relative flex items-center gap-2 h-9 px-3 rounded-xl border transition-all focus:outline-none cursor-pointer shadow-xs ${
-                  notificationsOpen
-                    ? "bg-[var(--ink)] text-[var(--ink-inverse)] border-[var(--ink)]"
-                    : "bg-[var(--surface-2)] text-[var(--ink)] border-[var(--border-token)] hover:border-[var(--border-strong)]"
-                }`}
-                aria-label="View notifications"
-              >
-                <Bell size={15} className={todayReportsCount > 0 ? "text-[var(--critical)]" : ""} />
-                <span className="text-[12px] font-bold">
-                  {todayReportsCount} New
-                </span>
-                {todayReportsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--critical)] border-2 border-[var(--surface)]" />
-                )}
-              </button>
-
-              {/* Notification Center: Responsive Mobile Bottom Sheet & Desktop Dropdown */}
-              <AnimatePresence>
-                {notificationsOpen && (
-                  <>
-                    {/* Backdrop */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                      className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs"
-                      onClick={() => setNotificationsOpen(false)}
-                      aria-hidden="true"
-                    />
-
-                    {/* Notification Panel */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 16, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 16, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                      className="fixed inset-x-3 bottom-3 top-auto sm:top-12 sm:bottom-auto sm:right-0 sm:left-auto sm:w-[390px] sm:absolute z-50 rounded-2xl border border-[var(--border-token)] bg-[var(--surface)] shadow-2xl p-4 sm:p-5 flex flex-col gap-3 max-h-[85vh] sm:max-h-[520px] overflow-hidden"
-                    >
-                      {/* Mobile Drag Indicator Bar */}
-                      <div className="w-10 h-1 rounded-full bg-[var(--border-token)] mx-auto -mt-1 mb-1 sm:hidden shrink-0" />
-
-                      {/* Header */}
-                      <div className="flex items-center justify-between border-b border-[var(--border-token)] pb-3 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--ink)] shadow-xs">
-                            <BellRing size={16} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="font-bold text-[14px] text-[var(--ink)] leading-none">
-                                Resident Activity
-                              </h3>
-                              <span className="w-2 h-2 rounded-full bg-[var(--resolved)] animate-pulse" />
-                            </div>
-                            <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                              Live complaint &amp; triage stream
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-foreground)]">
-                            Realtime
-                          </span>
-                          <button
-                            onClick={() => setNotificationsOpen(false)}
-                            aria-label="Close notification panel"
-                            className="w-8 h-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--ink)] transition-colors cursor-pointer"
-                          >
-                            <X size={15} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Summary Banner */}
-                      <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-start gap-3 shrink-0">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--resolved-tint)] border border-[var(--resolved)]/40 flex items-center justify-center shrink-0 mt-0.5 text-[var(--resolved)]">
-                          <FileText size={16} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-bold text-[var(--ink)] leading-tight">
-                            {todayReportsCount} new reports registered today
-                          </p>
-                          <p className="text-[12px] text-[var(--muted-foreground)] mt-0.5">
-                            {totalReportsCount} total complaints consolidated into active tickets.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Scrollable Notification List */}
-                      <div className="flex flex-col gap-2 overflow-y-auto max-h-[48vh] sm:max-h-[250px] pr-0.5 overscroll-contain">
-                        {clusters.length === 0 ? (
-                          <div className="py-8 text-center text-[12px] text-[var(--muted-foreground)]">
-                            No active notifications
-                          </div>
-                        ) : (
-                          clusters.slice(0, 8).map((cl) => (
-                            <div
-                              key={cl.id}
-                              onClick={() => {
-                                setSelectedId(cl.id);
-                                setNotificationsOpen(false);
-                              }}
-                              className="p-3 rounded-xl border border-[var(--border-token)] hover:bg-[var(--surface-2)] active:scale-[0.99] cursor-pointer transition-all flex items-center justify-between gap-2.5 bg-[var(--surface)] group"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                                  <span className="text-[13px] font-bold text-[var(--ink)] truncate max-w-[190px] sm:max-w-[210px]">
-                                    {cl.title}
-                                  </span>
-                                  <UrgencyChip level={cl.urgency as UrgencyLevel} />
-                                </div>
-                                <p className="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-semibold text-[var(--ink)]">{cl.complaint_count} report{cl.complaint_count !== 1 ? "s" : ""}</span>
-                                  <span>·</span>
-                                  <span className="truncate">{cl.flats.slice(0, 3).join(", ")}{cl.flats.length > 3 ? ` +${cl.flats.length - 3}` : ""}</span>
-                                  <span>·</span>
-                                  <span>{formatTimeAgo(cl.created_at)}</span>
-                                </p>
-                              </div>
-                              <ChevronRight size={15} className="text-[var(--muted-foreground)] group-hover:text-[var(--ink)] shrink-0 transition-colors" />
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Footer Controls */}
-                      <div className="border-t border-[var(--border-token)] pt-2.5 flex items-center justify-between text-[12px] shrink-0">
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
-                          Tap any ticket to inspect
-                        </span>
-                        <button
-                          onClick={() => setNotificationsOpen(false)}
-                          className="font-bold text-[12px] text-[var(--ink)] hover:underline cursor-pointer py-1 px-2.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border-token)]"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Notifications Toggle Button */}
+            <button
+              onClick={() => setNotificationsOpen(true)}
+              className={`relative flex items-center gap-2 h-9 px-3 rounded-xl border transition-all focus:outline-none cursor-pointer shadow-xs ${
+                notificationsOpen
+                  ? "bg-[var(--ink)] text-[var(--ink-inverse)] border-[var(--ink)]"
+                  : "bg-[var(--surface-2)] text-[var(--ink)] border-[var(--border-token)] hover:border-[var(--border-strong)]"
+              }`}
+              aria-label="View notifications"
+            >
+              <Bell size={15} className={todayReportsCount > 0 ? "text-[var(--critical)]" : ""} />
+              <span className="text-[12px] font-bold">
+                {todayReportsCount} New
+              </span>
+              {todayReportsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--critical)] border-2 border-[var(--surface)]" />
+              )}
+            </button>
           </div>
         </header>
 
@@ -841,6 +711,138 @@ export function DashboardClient() {
           onUpdate={handleUpdate}
         />
       )}
+
+      {/* ── Full Viewport Notification Center (Mobile Bottom Sheet & Desktop Popover) ── */}
+      <AnimatePresence>
+        {notificationsOpen && (
+          <div className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-start sm:items-end sm:p-6 pointer-events-none">
+            {/* Dark Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/65 backdrop-blur-xs pointer-events-auto"
+              onClick={() => setNotificationsOpen(false)}
+              aria-hidden="true"
+            />
+
+            {/* Notification Drawer Sheet (lays on screen properly on mobile) */}
+            <motion.div
+              initial={{ opacity: 0, y: 80 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 80 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative w-full sm:w-[410px] bg-[var(--surface)] border-t sm:border border-[var(--border-token)] rounded-t-[26px] sm:rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[580px] pointer-events-auto overflow-hidden sm:mt-12"
+            >
+              {/* Mobile Drag Indicator Bar */}
+              <div className="w-12 h-1.5 rounded-full bg-[var(--border-strong)]/30 mx-auto my-3 sm:hidden shrink-0" />
+
+              {/* Modal Header */}
+              <div className="px-5 py-3.5 border-b border-[var(--border-token)] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--ink)] shadow-xs">
+                    <BellRing size={17} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-[15px] text-[var(--ink)] leading-tight">
+                        Resident Activity
+                      </h3>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--resolved-tint)] text-[var(--resolved)] text-[10px] font-bold border border-[var(--resolved)]/40">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--resolved)] animate-pulse" />
+                        Live
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted-foreground)]">
+                      Real-time complaint &amp; triage stream
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted-foreground)]">
+                    {todayReportsCount} New
+                  </span>
+                  <button
+                    onClick={() => setNotificationsOpen(false)}
+                    aria-label="Close notification panel"
+                    className="w-8 h-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--ink)] transition-colors cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary Metric Strip */}
+              <div className="p-4 bg-[var(--surface-2)] border-b border-[var(--border-token)] flex items-start gap-3 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--resolved-tint)] border border-[var(--resolved)]/40 flex items-center justify-center shrink-0 mt-0.5 text-[var(--resolved)]">
+                  <FileText size={17} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold text-[var(--ink)] leading-tight">
+                    {todayReportsCount} new reports received today
+                  </p>
+                  <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                    {totalReportsCount} aggregate complaints consolidated into active tickets.
+                  </p>
+                </div>
+              </div>
+
+              {/* Scrollable Notification List */}
+              <div className="p-3 sm:p-4 flex-1 overflow-y-auto flex flex-col gap-2 max-h-[50vh] sm:max-h-[300px] overscroll-contain">
+                {clusters.length === 0 ? (
+                  <div className="py-10 text-center text-[13px] text-[var(--muted-foreground)] flex flex-col items-center justify-center">
+                    <Inbox size={28} className="mb-2 opacity-50" />
+                    <span>No notifications at the moment</span>
+                  </div>
+                ) : (
+                  clusters.slice(0, 8).map((cl) => (
+                    <div
+                      key={cl.id}
+                      onClick={() => {
+                        setSelectedId(cl.id);
+                        setNotificationsOpen(false);
+                      }}
+                      className="p-3 rounded-xl border border-[var(--border-token)] bg-[var(--surface)] hover:bg-[var(--surface-2)] active:scale-[0.99] cursor-pointer transition-all flex items-center justify-between gap-3 group shadow-xs"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="text-[13px] font-bold text-[var(--ink)] truncate max-w-[200px] sm:max-w-[230px]">
+                            {cl.title}
+                          </span>
+                          <UrgencyChip level={cl.urgency as UrgencyLevel} />
+                        </div>
+                        <p className="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-[var(--ink)]">{cl.complaint_count} report{cl.complaint_count !== 1 ? "s" : ""}</span>
+                          <span>·</span>
+                          <span className="truncate">{cl.flats.slice(0, 3).join(", ")}{cl.flats.length > 3 ? ` +${cl.flats.length - 3}` : ""}</span>
+                          <span>·</span>
+                          <span>{formatTimeAgo(cl.created_at)}</span>
+                        </p>
+                      </div>
+                      <ChevronRight size={16} className="text-[var(--muted-foreground)] group-hover:text-[var(--ink)] shrink-0 transition-colors" />
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-3 sm:p-4 border-t border-[var(--border-token)] bg-[var(--surface)] flex items-center justify-between gap-3 shrink-0">
+                <span className="text-[11px] text-[var(--muted-foreground)]">
+                  Tap ticket to open resolution details
+                </span>
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="h-9 px-4 rounded-xl text-[12px] font-bold text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--border-token)] hover:bg-[var(--border-token)] cursor-pointer transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
