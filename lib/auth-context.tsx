@@ -155,16 +155,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Auth State Listener + handle Google redirect result on page load
   useEffect(() => {
-    // Handle redirect result first (Google sign-in comes back here after redirect)
-    getRedirectResult(auth).then(async (result) => {
-      if (result?.user) {
-        await loadUserData(result.user.uid);
-      }
-    }).catch((err) => {
-      console.error("Redirect result error:", err);
-    });
+    // We resolve this promise BEFORE allowing onAuthStateChanged to set loading=false.
+    // This prevents a flash of the login page when returning from Google redirect.
+    let resolveRedirect: () => void;
+    const redirectPromise = new Promise<void>((res) => { resolveRedirect = res; });
+
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await loadUserData(result.user.uid);
+        }
+      })
+      .catch((err) => {
+        console.error("Redirect result error:", err);
+      })
+      .finally(() => resolveRedirect());
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      // Wait for redirect processing to finish before rendering anything
+      await redirectPromise;
+
       setUser(fbUser);
       if (fbUser) {
         await loadUserData(fbUser.uid);
