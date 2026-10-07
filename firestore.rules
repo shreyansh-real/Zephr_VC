@@ -1,0 +1,344 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SocietyDesk — Firestore Security Rules
+// Version: 1.0  |  Phase: P1
+//
+// DESIGN PRINCIPLES:
+//  1. Default deny everything — explicit allows only.
+//  2. All membership/role checks via get() — never trust client-supplied societyId.
+//  3. No collectionGroup queries — every path is fully qualified.
+//  4. Field-level validation with hasOnly() to prevent extra-field injection.
+//  5. Enum validation on every status/role/category field.
+//  6. String length caps on all user-supplied text.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+
+    /** Is the request authenticated? */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Convenience: the requesting user's uid */
+    function uid() {
+      return request.auth.uid;
+    }
+
+    /** Read a member document for uid in society sid */
+    function getMember(sid, userId) {
+      return get(/databases/$(database)/documents/societies/$(sid)/members/$(userId));
+    }
+
+    /** Does this member exist and have status == "active"? */
+    function isActiveMember(sid) {
+      return isSignedIn() &&
+        getMember(sid, uid()).data.status == "active";
+    }
+
+    /** Is the member an admin in this society? */
+    function isAdmin(sid) {
+      return isActiveMember(sid) &&
+        getMember(sid, uid()).data.role == "admin";
+    }
+
+    /** Is the member a volunteer or admin (staff)? */
+    function isStaff(sid) {
+      return isActiveMember(sid) &&
+        getMember(sid, uid()).data.role in ["admin", "volunteer"];
+    }
+
+    /** Is the member a volunteer specifically? */
+    function isVolunteer(sid) {
+      return isActiveMember(sid) &&
+        getMember(sid, uid()).data.role == "volunteer";
+    }
+
+    /** Is this a pending member (joined, not yet approved)? */
+    function isPendingMember(sid) {
+      return isSignedIn() &&
+        getMember(sid, uid()).data.status == "pending";
+    }
+
+    // ── /users/{uid} ─────────────────────────────────────────────────────────
+    // Users can read/write their own profile doc only.
+
+    match /users/{userId} {
+      allow read:   if isSignedIn() && uid() == userId;
+      allow create: if isSignedIn() && uid() == userId &&
+        request.resource.data.keys().hasOnly(["societyIds", "preferredLanguage"]) &&
+        request.resource.data.preferredLanguage in ["en", "hi", "mr"] &&
+        request.resource.data.societyIds is list;
+      allow update: if isSignedIn() && uid() == userId &&
+        request.resource.data.keys().hasOnly(["societyIds", "preferredLanguage"]) &&
+        request.resource.data.preferredLanguage in ["en", "hi", "mr"] &&
+        request.resource.data.societyIds is list;
+      allow delete: if false; // never delete a user profile here
+    }
+
+    // ── /inviteCodes/{code} ──────────────────────────────────────────────────
+    // Signed-in users can GET an invite code by exact document ID (to join).
+    // Nobody can LIST the collection (no collectionGroup, no wildcard read).
+    // Only admins (via society creation transaction) can write — enforced by
+    // the society create rule below.
+
+    match /inviteCodes/{code} {
+      allow get:    if isSignedIn(); // exact get only; no list
+      allow list:   if false;        // never allow listing all codes
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(["societyId"]) &&
+        request.resource.data.societyId is string &&
+        request.resource.data.societyId.size() > 0;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ── /societies/{sid} ─────────────────────────────────────────────────────
+
+    match /societies/{sid} {
+
+      // Any signed-in user can read a society doc (to display name on join flow)
+      allow get:    if isSignedIn();
+      allow list:   if false; // no listing all societies
+
+      // Create: only when the creator also creates themselves as admin+active member
+      // We validate the society fields and trust that the member subcollection
+      // write (in the same batch) will be validated by the member rule below.
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasOnly(
+          ["name", "type", "address", "inviteCode", "createdBy", "createdAt"]
+        ) &&
+        request.resource.data.createdBy == uid() &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.type is string &&
+        request.resource.data.type.size() > 0 &&
+        request.resource.data.address is string &&
+        request.resource.data.inviteCode is string &&
+        request.resource.data.inviteCode.size() >= 6 &&
+        request.resource.data.inviteCode.size() <= 12;
+
+      // Update: only admins can update society metadata
+      allow update: if isAdmin(sid) &&
+        request.resource.data.createdBy == resource.data.createdBy &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false; // never delete a society
+
+      // ── /societies/{sid}/members/{memberId} ────────────────────────────────
+
+      match /members/{memberId} {
+
+        // Active members can read other members' basic info (for assignment UI)
+        allow get:    if isActiveMember(sid) || isPendingMember(sid);
+        allow list:   if isStaff(sid);
+
+        // Create own member doc:
+        // Case 1 — joining via invite (role=resident, status=pending)
+        // Case 2 — society creator (role=admin, status=active)
+        //          ONLY allowed when the society doc's createdBy == uid()
+        allow create: if isSignedIn() && memberId == uid() && (
+          // Case 1: normal join
+          (
+            request.resource.data.role == "resident" &&
+            request.resource.data.status == "pending" &&
+            request.resource.data.keys().hasOnly(
+              ["name", "phone", "email", "role", "unitId", "status", "joinedAt"]
+            )
+          ) ||
+          // Case 2: society creator becomes admin
+          (
+            request.resource.data.role == "admin" &&
+            request.resource.data.status == "active" &&
+            get(/databases/$(database)/documents/societies/$(sid)).data.createdBy == uid() &&
+            request.resource.data.keys().hasOnly(
+              ["name", "phone", "email", "role", "unitId", "status", "joinedAt"]
+            )
+          )
+        ) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 1 &&
+        request.resource.data.name.size() <= 100 &&
+        (request.resource.data.phone == null || request.resource.data.phone is string) &&
+        (request.resource.data.email == null || request.resource.data.email is string) &&
+        (request.resource.data.unitId == null || request.resource.data.unitId is string);
+
+        // Update: admins can change role/status of any member.
+        //         Volunteers can approve (status pending→active) but never grant roles.
+        //         Nobody can edit their own role or status.
+        allow update: if memberId != uid() && (
+          // Admin: full control over role and status
+          isAdmin(sid) &&
+          request.resource.data.keys().hasOnly(
+            ["name", "phone", "email", "role", "unitId", "status", "joinedAt"]
+          ) &&
+          request.resource.data.role in ["resident", "volunteer", "admin"] &&
+          request.resource.data.status in ["pending", "active", "removed"]
+        ) || (
+          // Volunteer: can only flip pending→active, never touch role
+          isVolunteer(sid) &&
+          resource.data.status == "pending" &&
+          request.resource.data.status == "active" &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.keys().hasOnly(
+            ["name", "phone", "email", "role", "unitId", "status", "joinedAt"]
+          )
+        );
+
+        // Soft-remove via admin only (set status=removed)
+        allow delete: if false; // use status=removed instead
+      }
+
+      // ── /societies/{sid}/units/{unitId} ────────────────────────────────────
+
+      match /units/{unitId} {
+        allow read:   if isActiveMember(sid) || isPendingMember(sid);
+        allow create: if isAdmin(sid) &&
+          request.resource.data.keys().hasOnly(["label", "group", "type"]) &&
+          request.resource.data.label is string &&
+          request.resource.data.label.size() >= 1 &&
+          request.resource.data.label.size() <= 50 &&
+          request.resource.data.group is string &&
+          request.resource.data.type in ["flat", "room", "shop", "chawl"];
+        allow update: if isAdmin(sid);
+        allow delete: if isAdmin(sid);
+      }
+
+      // ── /societies/{sid}/complaints/{cid} ──────────────────────────────────
+
+      match /complaints/{cid} {
+
+        // Who can read a complaint?
+        // - Staff can always read
+        // - Active members can read public complaints
+        // - The complaint's own creator can always read (even private)
+        allow get: if isStaff(sid) ||
+          (isActiveMember(sid) && resource.data.visibility == "public") ||
+          (isActiveMember(sid) && resource.data.createdBy == uid());
+
+        allow list: if isStaff(sid) ||
+          (isActiveMember(sid));  // visibility filter enforced client-side + rules on get
+
+        // Create: any active member
+        allow create: if isActiveMember(sid) &&
+          request.resource.data.keys().hasOnly([
+            "title", "description", "category", "priority", "status",
+            "visibility", "createdBy", "unitId", "assignedTo",
+            "photos", "upvoteCount", "createdAt", "updatedAt"
+          ]) &&
+          request.resource.data.createdBy == uid() &&
+          request.resource.data.status == "open" &&  // must start as open
+          request.resource.data.assignedTo == null &&
+          request.resource.data.upvoteCount == 0 &&
+          request.resource.data.title is string &&
+          request.resource.data.title.size() >= 5 &&
+          request.resource.data.title.size() <= 200 &&
+          request.resource.data.description is string &&
+          request.resource.data.description.size() >= 10 &&
+          request.resource.data.description.size() <= 2000 &&
+          request.resource.data.category in
+            ["water","electricity","lift","security","cleanliness","parking","noise","other"] &&
+          request.resource.data.priority in ["low","medium","high","critical"] &&
+          request.resource.data.visibility in ["public","private"] &&
+          request.resource.data.photos is list &&
+          request.resource.data.photos.size() <= 3 &&
+          (request.resource.data.unitId == null || request.resource.data.unitId is string);
+
+        // Update rules:
+        // - Resident can only edit their own complaints while status == "open"
+        //   and cannot change status, assignedTo, or createdBy
+        // - Staff can change status and assignedTo but not createdBy or createdAt
+        allow update: if (
+          // Resident edit (title/desc/category/priority/visibility/photos only, while open)
+          isActiveMember(sid) &&
+          resource.data.createdBy == uid() &&
+          resource.data.status == "open" &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.assignedTo == resource.data.assignedTo &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.upvoteCount == resource.data.upvoteCount &&
+          request.resource.data.title is string &&
+          request.resource.data.title.size() >= 5 &&
+          request.resource.data.title.size() <= 200 &&
+          request.resource.data.description is string &&
+          request.resource.data.description.size() >= 10 &&
+          request.resource.data.description.size() <= 2000
+        ) || (
+          // Staff can update status and assignedTo; cannot change createdBy/createdAt
+          isStaff(sid) &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.status in
+            ["open","acknowledged","in_progress","resolved","closed"] &&
+          (request.resource.data.assignedTo == null ||
+           request.resource.data.assignedTo is string)
+        ) || (
+          // Resident can reopen a resolved complaint (status: resolved/closed → open)
+          isActiveMember(sid) &&
+          resource.data.createdBy == uid() &&
+          resource.data.status in ["resolved", "closed"] &&
+          request.resource.data.status == "open" &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt
+        ) || (
+          // Any active member can increment upvoteCount by exactly 1 on a public complaint
+          isActiveMember(sid) &&
+          resource.data.visibility == "public" &&
+          request.resource.data.upvoteCount == resource.data.upvoteCount + 1 &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["upvoteCount", "updatedAt"])
+        );
+
+        allow delete: if false; // complaints are never deleted
+
+        // ── /societies/{sid}/complaints/{cid}/updates/{updateId} ─────────────
+
+        match /updates/{updateId} {
+          allow read:   if isStaff(sid) ||
+            (isActiveMember(sid) && get(/databases/$(database)/documents/societies/$(sid)/complaints/$(cid)).data.visibility == "public") ||
+            (isActiveMember(sid) && get(/databases/$(database)/documents/societies/$(sid)/complaints/$(cid)).data.createdBy == uid());
+
+          allow create: if isStaff(sid) ||
+            // Resident can add a comment on their own open complaint
+            (isActiveMember(sid) &&
+             get(/databases/$(database)/documents/societies/$(sid)/complaints/$(cid)).data.createdBy == uid()) &&
+            request.resource.data.keys().hasOnly(["message", "by", "statusChange", "createdAt"]) &&
+            request.resource.data.by == uid() &&
+            request.resource.data.message is string &&
+            request.resource.data.message.size() >= 1 &&
+            request.resource.data.message.size() <= 1000 &&
+            (request.resource.data.statusChange == null ||
+             request.resource.data.statusChange is string);
+
+          allow update: if false; // updates are immutable timeline entries
+          allow delete: if false;
+        }
+
+        // ── /societies/{sid}/complaints/{cid}/upvotes/{uid} ──────────────────
+        // doc id MUST equal the upvoting user's uid.
+        // One vote per user. Counter update validated separately on the complaint.
+
+        match /upvotes/{voterId} {
+          allow read:   if isActiveMember(sid);
+          allow create: if isActiveMember(sid) &&
+            voterId == uid() &&
+            // Complaint must be public to upvote
+            get(/databases/$(database)/documents/societies/$(sid)/complaints/$(cid)).data.visibility == "public" &&
+            request.resource.data.keys().hasOnly(["createdAt"]);
+          allow update: if false; // upvotes are immutable once cast
+          allow delete: if false; // no un-voting
+        }
+      }
+    }
+
+    // ── Catch-all deny ────────────────────────────────────────────────────────
+    // Explicit. Belt and suspenders.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

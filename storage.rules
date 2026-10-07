@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SocietyDesk — Firebase Storage Security Rules
+//
+// Path structure: societies/{sid}/complaints/{cid}/{filename}
+//
+// ENFORCEMENT:
+//  1. Require active membership in the society (via Firestore get).
+//  2. Content-type must be image/* only.
+//  3. File size < 2 MB (after client-side compression).
+//  4. Residents can upload to their own complaints; staff can upload to any.
+//  5. Default deny.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Society complaint photos ──────────────────────────────────────────────
+    match /societies/{sid}/complaints/{cid}/{filename} {
+
+      // Helper: check active membership in Firestore
+      function isMemberActive() {
+        return firestore.get(
+          /databases/(default)/documents/societies/$(sid)/members/$(request.auth.uid)
+        ).data.status == "active";
+      }
+
+      // Helper: check if user is staff (volunteer or admin)
+      function isStaffMember() {
+        return firestore.get(
+          /databases/(default)/documents/societies/$(sid)/members/$(request.auth.uid)
+        ).data.role in ["admin", "volunteer"];
+      }
+
+      // Helper: check if the complaint belongs to the requesting user
+      function isComplaintOwner() {
+        return firestore.get(
+          /databases/(default)/documents/societies/$(sid)/complaints/$(cid)
+        ).data.createdBy == request.auth.uid;
+      }
+
+      // Read: any active member of the society can view photos
+      allow read: if request.auth != null && isMemberActive();
+
+      // Write (upload): active member who owns the complaint, OR staff
+      allow write: if
+        request.auth != null &&
+        isMemberActive() &&
+        (isComplaintOwner() || isStaffMember()) &&
+        // Content-type must be an image
+        request.resource.contentType.matches("image/.*") &&
+        // Size limit: 2 MB (2 * 1024 * 1024 bytes)
+        request.resource.size <= 2 * 1024 * 1024;
+
+      allow delete: if request.auth != null && isStaffMember();
+    }
+
+    // ── Default deny ──────────────────────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

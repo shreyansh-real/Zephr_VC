@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   SocietyDesk Design Tokens
+   Source of truth: /Design.md (root of Zephr workspace)
+   ALL colors must use these variables — never hard-code hex.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Light mode (default) ────────────────────────────────────── */
+:root {
+  --bg:            #f5f0e8;
+  --surface:       #fffcf6;
+  --surface-2:     #efe9dc;
+  --ink:           #1a1a18;
+  --ink-inverse:   #f5f0e8;
+  --muted:         #5f5b51;
+  --border-token:  #d3cbba;
+  --border-strong: #1a1a18;
+
+  /* Urgency & status — the ONLY colors in the product */
+  --critical:      #d62f1f;
+  --critical-tint: #fbe3df;
+  --high:          #b8600e;
+  --high-tint:     #f8e6d0;
+  --medium:        #3d6c9e;
+  --medium-tint:   #dfe9f3;
+  --low:           #5e7659;
+  --low-tint:      #e4ebe1;
+  --resolved:      #2f6b4f;
+  --resolved-tint: #dcebe3;
+  --review:        #8a6a00;
+}
+
+/* ── Dark mode (warm, not pure black) ────────────────────────── */
+.dark {
+  --bg:            #161511;
+  --surface:       #201e19;
+  --surface-2:     #2a2721;
+  --ink:           #f2ede3;
+  --ink-inverse:   #161511;
+  --muted:         #a8a292;
+  --border-token:  #3b372f;
+  --border-strong: #f2ede3;
+
+  --critical:      #ff5a48;
+  --critical-tint: #3a1712;
+  --high:          #f0a04b;
+  --high-tint:     #33230f;
+  --medium:        #7faedd;
+  --medium-tint:   #152433;
+  --low:           #a2bc9b;
+  --low-tint:      #1d2a1b;
+  --resolved:      #5db88c;
+  --resolved-tint: #14281f;
+  --review:        #e6c25c;
+}
+
+/* ── Tailwind v4 theme mapping ───────────────────────────────── */
+@theme inline {
+  --color-background:  var(--bg);
+  --color-foreground:  var(--ink);
+  --color-border:      var(--border-token);
+  --color-ring:        var(--border-strong);
+  --font-sans:         var(--font-body);
+  --font-display:      var(--font-display);
+}
+
+/* ── Base layer ──────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body), "Noto Sans Devanagari", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Devanagari text needs taller line-height */
+  :lang(hi), :lang(mr), .devanagari {
+    font-family: var(--font-deva), system-ui, sans-serif;
+    line-height: 1.7;
+  }
+
+  /* Visible focus outlines on every interactive element — WCAG 2.4.7 */
+  :focus-visible {
+    outline: 2px solid var(--border-strong);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default focus outline; :focus-visible provides it */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ── Typography utilities ─────────────────────────────────────── */
+
+/* Display font (Archivo) for titles and count numerals */
+.font-display {
+  font-family: var(--font-display), "Noto Sans Devanagari", system-ui, sans-serif;
+}
+
+/* Count numeral — the hero element. Set by Design.md §4.1 */
+.count-numeral {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-stretch: 70%;
+  font-variant-numeric: tabular-nums;
+}
+
+.count-numeral-focus {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 96px;
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-stretch: 70%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabular numerals for any numeric data (flat numbers, counts) */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .count-numeral       { font-size: 56px; }
+  .count-numeral-focus { font-size: 72px; }
+}
+
+/* ── Motion: reduced-motion global override ──────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Skeleton shimmer (opacity pulse only, no gradient shimmer) ── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+.skeleton {
+  background-color: var(--surface-2);
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* ── Critical chip pulse (the only looping animation) ────────── */
+@keyframes critical-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+.critical-icon-pulse {
+  animation: critical-pulse 2s ease-in-out infinite;
+}
+
+/* ── New-complaint card border flash ─────────────────────────── */
+@keyframes border-flash {
+  0%   { outline: 2px solid transparent; }
+  30%  { outline: 2px solid var(--border-strong); }
+  100% { outline: 2px solid transparent; }
+}
+
+.card-flash {
+  animation: border-flash 1.2s ease-out;
+}

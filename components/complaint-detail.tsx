@@ -1,0 +1,512 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { useLanguageStore } from "@/lib/language-store";
+import {
+  doc,
+  collection,
+  query,
+  orderBy,
+  getDocs,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  runTransaction,
+  getDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  type Complaint,
+  type ComplaintStatus,
+  type ComplaintUpdate,
+  type Member,
+} from "@/lib/types";
+import { UrgencyChip, UrgencyBar } from "./urgency-chip";
+import { StatusChip } from "./status-chip";
+import { timeAgo } from "@/lib/utils";
+import {
+  ArrowLeft,
+  ThumbsUp,
+  MessageSquare,
+  Send,
+  Loader2,
+  Lock,
+  Globe,
+  RotateCcw,
+} from "lucide-react";
+
+export function ComplaintDetail({
+  complaintId,
+  onBack,
+  onStatusUpdated,
+}: {
+  complaintId: string;
+  onBack: () => void;
+  onStatusUpdated?: () => void;
+}) {
+  const { user, currentSocietyId, currentMember } = useAuth();
+  const { t } = useLanguageStore();
+
+  const [complaint, setComplaint] = useState<Complaint | null>(null);
+  const [updates, setUpdates] = useState<Array<{ id: string; update: ComplaintUpdate }>>([]);
+  const [members, setMembers] = useState<Record<string, string>>({});
+  const [volunteers, setVolunteers] = useState<Array<{ id: string; name: string }>>([]);
+  const [hasUpvoted, setHasUpvoted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submittingUpdate, setSubmittingUpdate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [newStatus, setNewStatus] = useState<ComplaintStatus>("open");
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("");
+
+  const isStaff = currentMember?.role === "admin" || currentMember?.role === "volunteer";
+  const isCreator = user && complaint && complaint.createdBy === user.uid;
+
+  const refreshData = useCallback(async () => {
+    if (!currentSocietyId || !complaintId) return;
+    try {
+      const cSnap = await getDoc(doc(db, "societies", currentSocietyId, "complaints", complaintId));
+      if (!cSnap.exists()) return;
+      const cData = cSnap.data() as Complaint;
+      setComplaint(cData);
+      setNewStatus(cData.status);
+      setSelectedAssignee(cData.assignedTo || "");
+
+      const updatesSnap = await getDocs(
+        query(
+          collection(db, "societies", currentSocietyId, "complaints", complaintId, "updates"),
+          orderBy("createdAt", "asc")
+        )
+      );
+      const updatesList: Array<{ id: string; update: ComplaintUpdate }> = [];
+      updatesSnap.forEach((d) => {
+        updatesList.push({ id: d.id, update: d.data() as ComplaintUpdate });
+      });
+      setUpdates(updatesList);
+
+      if (user) {
+        const upvoteDoc = await getDoc(
+          doc(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes", user.uid)
+        );
+        setHasUpvoted(upvoteDoc.exists());
+      }
+    } catch (err) {
+      console.error("Error refreshing complaint detail:", err);
+    }
+  }, [currentSocietyId, complaintId, user]);
+
+  useEffect(() => {
+    let active = true;
+    if (!currentSocietyId || !complaintId) return;
+
+    (async () => {
+      try {
+        const cSnap = await getDoc(doc(db, "societies", currentSocietyId, "complaints", complaintId));
+        if (!active || !cSnap.exists()) return;
+        const cData = cSnap.data() as Complaint;
+        setComplaint(cData);
+        setNewStatus(cData.status);
+        setSelectedAssignee(cData.assignedTo || "");
+
+        const updatesSnap = await getDocs(
+          query(
+            collection(db, "societies", currentSocietyId, "complaints", complaintId, "updates"),
+            orderBy("createdAt", "asc")
+          )
+        );
+        if (!active) return;
+        const updatesList: Array<{ id: string; update: ComplaintUpdate }> = [];
+        updatesSnap.forEach((d) => {
+          updatesList.push({ id: d.id, update: d.data() as ComplaintUpdate });
+        });
+        setUpdates(updatesList);
+
+        if (user) {
+          const upvoteDoc = await getDoc(
+            doc(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes", user.uid)
+          );
+          if (active) {
+            setHasUpvoted(upvoteDoc.exists());
+          }
+        }
+
+        if (currentMember?.role === "admin" || currentMember?.role === "volunteer") {
+          const memSnap = await getDocs(collection(db, "societies", currentSocietyId, "members"));
+          if (!active) return;
+          const namesMap: Record<string, string> = {};
+          const staffList: Array<{ id: string; name: string }> = [];
+
+          memSnap.forEach((d) => {
+            const m = d.data() as Member;
+            namesMap[d.id] = m.name;
+            if (m.role === "admin" || m.role === "volunteer") {
+              staffList.push({ id: d.id, name: `${m.name} (${m.role})` });
+            }
+          });
+
+          setMembers(namesMap);
+          setVolunteers(staffList);
+        }
+      } catch (err) {
+        console.error("Error loading complaint detail:", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [currentSocietyId, complaintId, user, currentMember]);
+
+  // Handle Upvote
+  const handleUpvote = async () => {
+    if (!user || !currentSocietyId || !complaint || hasUpvoted) return;
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const cRef = doc(db, "societies", currentSocietyId, "complaints", complaintId);
+        const upvoteRef = doc(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes", user.uid);
+
+        const currentSnap = await tx.get(cRef);
+        if (!currentSnap.exists()) return;
+
+        const currentCount = (currentSnap.data() as Complaint).upvoteCount || 0;
+
+        tx.set(upvoteRef, {
+          createdAt: serverTimestamp(),
+        });
+
+        tx.update(cRef, {
+          upvoteCount: currentCount + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      setHasUpvoted(true);
+      setComplaint((prev) => (prev ? { ...prev, upvoteCount: (prev.upvoteCount || 0) + 1 } : null));
+    } catch (err) {
+      console.error("Upvote error:", err);
+    }
+  };
+
+  // Post update & change status / assignee
+  const handlePostUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !currentSocietyId || !updateMessage.trim()) return;
+
+    setSubmittingUpdate(true);
+    try {
+      const cRef = doc(db, "societies", currentSocietyId, "complaints", complaintId);
+      const updateRef = doc(collection(db, "societies", currentSocietyId, "complaints", complaintId, "updates"));
+
+      const isStatusChanged = isStaff && newStatus !== complaint?.status;
+      const isAssigneeChanged = isStaff && (selectedAssignee || null) !== complaint?.assignedTo;
+
+      await setDoc(updateRef, {
+        message: updateMessage.trim(),
+        by: user.uid,
+        statusChange: isStatusChanged ? newStatus : null,
+        createdAt: serverTimestamp(),
+      });
+
+      if (isStaff && (isStatusChanged || isAssigneeChanged)) {
+        await updateDoc(cRef, {
+          ...(isStatusChanged ? { status: newStatus } : {}),
+          ...(isAssigneeChanged ? { assignedTo: selectedAssignee || null } : {}),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      setUpdateMessage("");
+      await refreshData();
+      onStatusUpdated?.();
+    } catch (err) {
+      console.error("Update post error:", err);
+    } finally {
+      setSubmittingUpdate(false);
+    }
+  };
+
+  // Reopen resolved complaint (Resident feature)
+  const handleReopen = async () => {
+    if (!currentSocietyId || !complaintId || !isCreator || !user) return;
+    try {
+      const cRef = doc(db, "societies", currentSocietyId, "complaints", complaintId);
+      const updateRef = doc(collection(db, "societies", currentSocietyId, "complaints", complaintId, "updates"));
+
+      await setDoc(updateRef, {
+        message: "Issue was reopened by resident.",
+        by: user.uid,
+        statusChange: "open",
+        createdAt: serverTimestamp(),
+      });
+
+      await updateDoc(cRef, {
+        status: "open",
+        updatedAt: serverTimestamp(),
+      });
+
+      await refreshData();
+      onStatusUpdated?.();
+    } catch (err) {
+      console.error("Reopen error:", err);
+    }
+  };
+
+  if (loading || !complaint) {
+    return (
+      <div className="py-20 text-center text-sm font-semibold text-[var(--muted)]">
+        <Loader2 className="w-7 h-7 animate-spin mx-auto mb-2 text-[var(--ink)]" />
+        <span>{t.common.loading}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-3xl mx-auto py-6">
+      {/* Back button */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 text-xs font-bold rounded border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-[var(--ink)] transition-colors min-h-[44px]"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        <span>{t.common.back} to Noticeboard</span>
+      </button>
+
+      {/* Main Card */}
+      <div className="bg-[var(--surface)] border border-[var(--border-token)] rounded-lg overflow-hidden shadow-xs">
+        <div className="flex">
+          <UrgencyBar level={complaint.priority} />
+          <div className="flex-1 p-6 sm:p-8">
+            {/* Header badges */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <UrgencyChip level={complaint.priority} />
+                <StatusChip status={complaint.status} />
+                <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)]">
+                  {t.categories[complaint.category]}
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+                  {complaint.visibility === "public" ? (
+                    <Globe className="w-3.5 h-3.5" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5" />
+                  )}
+                  <span>{complaint.visibility}</span>
+                </span>
+              </div>
+
+              {/* Upvote button for public issues */}
+              {complaint.visibility === "public" && (
+                <button
+                  type="button"
+                  disabled={hasUpvoted}
+                  onClick={handleUpvote}
+                  className={`h-10 px-3.5 rounded-md border text-xs font-bold flex items-center gap-1.5 transition-all min-h-[44px] ${
+                    hasUpvoted
+                      ? "bg-[var(--surface-2)] border-[var(--border-strong)] text-[var(--ink)] cursor-default"
+                      : "border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-[var(--ink)]"
+                  }`}
+                >
+                  <ThumbsUp className={`w-3.5 h-3.5 ${hasUpvoted ? "fill-current" : ""}`} />
+                  <span>
+                    {hasUpvoted ? t.complaints.upvoted : t.complaints.upvoteAction} (
+                    {complaint.upvoteCount || 0})
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-[var(--ink)] mb-3">
+              {complaint.title}
+            </h1>
+
+            {/* Meta info */}
+            <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[var(--muted)] mb-6 pb-4 border-b border-[var(--border-token)]">
+              <span>
+                Unit: <strong className="text-[var(--ink)]">{complaint.unitId || "General"}</strong>
+              </span>
+              <span>•</span>
+              <span>{timeAgo(complaint.createdAt)}</span>
+              {complaint.assignedTo && (
+                <>
+                  <span>•</span>
+                  <span>
+                    Assigned:{" "}
+                    <strong className="text-[var(--ink)]">
+                      {members[complaint.assignedTo] || "Volunteer"}
+                    </strong>
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="prose text-base text-[var(--ink)] leading-relaxed mb-6 whitespace-pre-wrap">
+              {complaint.description}
+            </div>
+
+            {/* Attached Photos */}
+            {complaint.photos && complaint.photos.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                  Attached Photos ({complaint.photos.length})
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {complaint.photos.map((url, i) => (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-video rounded-md overflow-hidden border border-[var(--border-token)] bg-[var(--surface-2)] hover:opacity-95 transition-opacity"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Resident Reopen Button */}
+            {isCreator && (complaint.status === "resolved" || complaint.status === "closed") && (
+              <div className="p-4 rounded-md bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-between gap-4 mb-6">
+                <div className="text-xs text-[var(--muted)]">
+                  Issue marked as {complaint.status}. If the problem persists, you can reopen it.
+                </div>
+                <button
+                  type="button"
+                  onClick={handleReopen}
+                  className="h-9 px-3 rounded-md bg-[var(--ink)] text-[var(--ink-inverse)] text-xs font-bold flex items-center gap-1.5 min-h-[44px]"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reopen Issue</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Timeline / Activity Section */}
+        <div className="border-t border-[var(--border-token)] bg-[var(--surface-2)] p-6 sm:p-8">
+          <h2 className="text-lg font-black font-display text-[var(--ink)] mb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            <span>{t.complaints.timeline}</span>
+          </h2>
+
+          <div className="space-y-4 mb-6">
+            {updates.length === 0 ? (
+              <p className="text-xs text-[var(--muted)] italic">No updates posted yet.</p>
+            ) : (
+              updates.map(({ id, update }) => (
+                <div
+                  key={id}
+                  className="p-3.5 rounded-md bg-[var(--surface)] border border-[var(--border-token)] text-sm space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                    <span className="font-bold text-[var(--ink)]">
+                      {members[update.by] || "Member"}
+                    </span>
+                    <span>{timeAgo(update.createdAt)}</span>
+                  </div>
+
+                  {update.statusChange && (
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-[var(--surface-2)] border border-[var(--border-token)]">
+                      <span>Status changed to:</span>
+                      <StatusChip status={update.statusChange} />
+                    </div>
+                  )}
+
+                  <p className="text-[var(--ink)] text-sm whitespace-pre-wrap">{update.message}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Post Update Form (Staff or Creator) */}
+          {(isStaff || isCreator) && (
+            <form onSubmit={handlePostUpdate} className="space-y-3 bg-[var(--surface)] p-4 rounded-md border border-[var(--border-token)]">
+              <p className="text-xs font-bold text-[var(--ink)] uppercase">
+                {isStaff ? "Post Update or Change Status" : "Add Comment"}
+              </p>
+
+              {/* Staff Controls: Status & Assignee */}
+              {isStaff && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--muted)] mb-1">
+                      {t.complaints.statusChange}
+                    </label>
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value as ComplaintStatus)}
+                      className="w-full h-10 px-2.5 rounded border border-[var(--border-token)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)]"
+                    >
+                      <option value="open">{t.statuses.open}</option>
+                      <option value="acknowledged">{t.statuses.acknowledged}</option>
+                      <option value="in_progress">{t.statuses.in_progress}</option>
+                      <option value="resolved">{t.statuses.resolved}</option>
+                      <option value="closed">{t.statuses.closed}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--muted)] mb-1">
+                      {t.complaints.assigneeChange}
+                    </label>
+                    <select
+                      value={selectedAssignee}
+                      onChange={(e) => setSelectedAssignee(e.target.value)}
+                      className="w-full h-10 px-2.5 rounded border border-[var(--border-token)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)]"
+                    >
+                      <option value="">{t.complaints.unassigned}</option>
+                      {volunteers.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <textarea
+                  value={updateMessage}
+                  onChange={(e) => setUpdateMessage(e.target.value)}
+                  placeholder={
+                    isStaff
+                      ? "Write an update for residents or internal note..."
+                      : "Add your comment on this issue..."
+                  }
+                  rows={3}
+                  required
+                  className="w-full p-2.5 rounded border border-[var(--border-token)] bg-[var(--surface)] text-sm text-[var(--ink)] focus:border-[var(--border-strong)] resize-y"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={submittingUpdate || !updateMessage.trim()}
+                  className="h-10 px-4 rounded bg-[var(--ink)] text-[var(--ink-inverse)] text-xs font-bold flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 min-h-[44px]"
+                >
+                  {submittingUpdate ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>Post Update</span>
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
