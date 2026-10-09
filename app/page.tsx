@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguageStore } from "@/lib/language-store";
 import { Navbar } from "@/components/navbar";
@@ -25,6 +25,39 @@ export default function HomePage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
+  // Multilingual Hello cycling state
+  const HELLO_WORDS = [
+    { word: "Hello",      lang: "English" },
+    { word: "नमस्ते",     lang: "Hindi" },
+    { word: "नमस्कार",   lang: "Marathi" },
+    { word: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ", lang: "Punjabi" },
+    { word: "નમસ્તે",    lang: "Gujarati" },
+    { word: "வணக்கம்",  lang: "Tamil" },
+    { word: "నమస్కారం",  lang: "Telugu" },
+    { word: "ಹಲೋ",       lang: "Kannada" },
+    { word: "ഹലോ",       lang: "Malayalam" },
+    { word: "আদাব",      lang: "Bengali" },
+    { word: "سلام",      lang: "Urdu" },
+  ];
+  const [helloIdx, setHelloIdx] = useState(0);
+  const [helloVisible, setHelloVisible] = useState(true);
+  const helloTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!loading) return;
+    const cycle = () => {
+      setHelloVisible(false);
+      helloTimer.current = setTimeout(() => {
+        setHelloIdx((i) => (i + 1) % HELLO_WORDS.length);
+        setHelloVisible(true);
+        helloTimer.current = setTimeout(cycle, 1600);
+      }, 300);
+    };
+    helloTimer.current = setTimeout(cycle, 1600);
+    return () => { if (helloTimer.current) clearTimeout(helloTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handler = (e: any) => {
@@ -46,26 +79,45 @@ export default function HomePage() {
     setDeferredPrompt(null);
   };
 
-  // Loading state
+  // Loading state — multilingual Hello screen
   if (loading) {
+    const current = HELLO_WORDS[helloIdx];
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)]">
-        <div className="flex flex-col items-center gap-5">
-          {/* Logo mark */}
+        <div className="flex flex-col items-center gap-6">
+          {/* Logo */}
           <div className="relative">
             <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[var(--border-token)] shadow-md">
               <img src="/favicon.svg" alt="SocietyDesk" className="w-full h-full object-cover" />
             </div>
-            {/* Pulsing ring */}
             <span className="absolute inset-0 rounded-2xl animate-ping border-2 border-[var(--border-strong)] opacity-20" />
           </div>
 
-          {/* Brand name */}
+          {/* Cycling hello word */}
+          <div className="flex flex-col items-center gap-1 min-h-[64px] justify-center">
+            <span
+              key={helloIdx}
+              className="text-4xl font-black font-display text-[var(--ink)] transition-all duration-300"
+              style={{
+                opacity: helloVisible ? 1 : 0,
+                transform: helloVisible ? "translateY(0)" : "translateY(10px)",
+              }}
+            >
+              {current.word}
+            </span>
+            <span
+              className="text-xs font-semibold text-[var(--muted)] tracking-wide uppercase transition-opacity duration-300"
+              style={{ opacity: helloVisible ? 0.7 : 0 }}
+            >
+              {current.lang}
+            </span>
+          </div>
+
+          {/* Brand name + dots */}
           <div className="flex flex-col items-center gap-1.5">
-            <span className="text-lg font-black tracking-tight text-[var(--ink)] font-display">
+            <span className="text-sm font-bold tracking-tight text-[var(--muted)] font-display">
               SocietyDesk
             </span>
-            {/* Animated dots */}
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:0ms]" />
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:150ms]" />

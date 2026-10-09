@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguageStore } from "@/lib/language-store";
 import {
@@ -30,6 +30,10 @@ import {
   Trash2,
   Megaphone,
   Pin,
+  Bold,
+  Italic,
+  Underline,
+  Type,
 } from "lucide-react";
 
 export function AdminPanel() {
@@ -219,10 +223,10 @@ export function AdminPanel() {
 
   // Notice composer state
   const [noticeTitle, setNoticeTitle] = useState("");
-  const [noticeBody, setNoticeBody] = useState("");
   const [noticePinned, setNoticePinned] = useState(false);
   const [notices, setNotices] = useState<Array<{ id: string; title: string; pinned: boolean; postedByName: string }>>([]);
   const [noticeLoading, setNoticeLoading] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const fetchNotices = useCallback(async () => {
     if (!currentSocietyId) return;
@@ -246,12 +250,14 @@ export function AdminPanel() {
 
   const handlePostNotice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentSocietyId || !currentMember || !noticeTitle.trim() || !noticeBody.trim()) return;
+    if (!currentSocietyId || !currentMember || !noticeTitle.trim()) return;
+    const bodyHtml = editorRef.current?.innerHTML?.trim() || "";
+    if (!bodyHtml || bodyHtml === "<br>") return;
     setNoticeLoading(true);
     try {
       await addDoc(collection(db, "societies", currentSocietyId, "notices"), {
         title: noticeTitle.trim(),
-        body: noticeBody.trim(),
+        body: bodyHtml,
         pinned: noticePinned,
         postedBy: currentMember.email || "",
         postedByName: currentMember.name,
@@ -259,8 +265,8 @@ export function AdminPanel() {
         updatedAt: serverTimestamp(),
       });
       setNoticeTitle("");
-      setNoticeBody("");
       setNoticePinned(false);
+      if (editorRef.current) editorRef.current.innerHTML = "";
       setMessage("Notice posted successfully");
       await fetchNotices();
     } catch (err) {
@@ -653,16 +659,59 @@ export function AdminPanel() {
             </div>
             <div>
               <label className="block text-xs font-bold text-[var(--muted)] mb-1">
-                Body <span className="font-normal opacity-60">(plain text or basic HTML)</span>
+                Body
               </label>
-              <textarea
-                value={noticeBody}
-                onChange={(e) => setNoticeBody(e.target.value)}
-                placeholder="Write the notice content here…"
-                required
-                rows={4}
-                maxLength={3000}
-                className="w-full px-3 py-2 rounded border border-[var(--border-token)] bg-[var(--surface)] text-sm font-medium resize-y"
+              {/* Rich-text toolbar */}
+              <div className="flex items-center gap-0.5 p-1 mb-1 bg-[var(--surface-2)] border border-[var(--border-token)] rounded-t-md">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); document.execCommand("bold"); }}
+                  className="p-1.5 rounded hover:bg-[var(--surface)] text-[var(--ink)] transition-colors"
+                  title="Bold"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); document.execCommand("italic"); }}
+                  className="p-1.5 rounded hover:bg-[var(--surface)] text-[var(--ink)] transition-colors"
+                  title="Italic"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); document.execCommand("underline"); }}
+                  className="p-1.5 rounded hover:bg-[var(--surface)] text-[var(--ink)] transition-colors"
+                  title="Underline"
+                >
+                  <Underline className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-[var(--border-token)] mx-1" />
+                {/* Font size buttons */}
+                {[
+                  { label: "S", size: "1", title: "Small" },
+                  { label: "M", size: "3", title: "Medium" },
+                  { label: "L", size: "5", title: "Large" },
+                ].map(({ label, size, title }) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); document.execCommand("fontSize", false, size); }}
+                    className="px-1.5 py-1 rounded hover:bg-[var(--surface)] text-[var(--ink)] text-xs font-bold transition-colors"
+                    title={title}
+                  >
+                    <Type className="w-3 h-3 inline mr-0.5" />{label}
+                  </button>
+                ))}
+              </div>
+              {/* Editable area */}
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                data-placeholder="Write the notice content here…"
+                className="min-h-[100px] px-3 py-2 rounded-b-md border border-t-0 border-[var(--border-token)] bg-[var(--surface)] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] notice-editor empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--muted)] empty:before:pointer-events-none"
               />
             </div>
             <label className="flex items-center gap-2 cursor-pointer select-none">

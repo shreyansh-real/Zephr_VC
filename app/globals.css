@@ -189,3 +189,22 @@
 .card-flash {
   animation: border-flash 1.2s ease-out;
 }
+
+/* ── Rich-text notice editor ──────────────────────────────────── */
+.notice-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── Hello loading animation ──────────────────────────────────── */
+@keyframes hello-fade {
+  0%   { opacity: 0; transform: translateY(8px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+.hello-word {
+  animation: hello-fade 1.8s ease-in-out forwards;
+}

@@ -6,7 +6,7 @@ import {
   collection,
   query,
   orderBy,
-  getDocs,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { type Notice } from "@/lib/types";
@@ -19,29 +19,38 @@ export function NoticesPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-    if (!currentSocietyId) { setLoading(false); return; }
+    if (!currentSocietyId) {
+      setLoading(false);
+      return;
+    }
 
-    (async () => {
-      try {
-        const q = query(
-          collection(db, "societies", currentSocietyId, "notices"),
-          orderBy("pinned", "desc"),
-          orderBy("createdAt", "desc")
-        );
-        const snap = await getDocs(q);
-        if (!active) return;
+    // Single orderBy to avoid composite-index requirement.
+    // Pinned notices are sorted client-side after fetch.
+    const q = query(
+      collection(db, "societies", currentSocietyId, "notices"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
         const list: Array<{ id: string; notice: Notice }> = [];
         snap.forEach((d) => list.push({ id: d.id, notice: d.data() as Notice }));
+        // Pinned first, then by createdAt descending (already ordered from query)
+        list.sort((a, b) => {
+          if (a.notice.pinned === b.notice.pinned) return 0;
+          return a.notice.pinned ? -1 : 1;
+        });
         setNotices(list);
-      } catch (err) {
-        console.error("Notices fetch error:", err);
-      } finally {
-        if (active) setLoading(false);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Notices snapshot error:", err);
+        setLoading(false);
       }
-    })();
+    );
 
-    return () => { active = false; };
+    return () => unsub();
   }, [currentSocietyId]);
 
   if (loading) {
@@ -80,7 +89,7 @@ export function NoticesPanel() {
           </div>
           {/* Render rich text body as HTML — content is posted only by trusted staff */}
           <div
-            className="text-xs text-[var(--muted)] leading-relaxed prose-reset notice-body"
+            className="text-xs text-[var(--muted)] leading-relaxed notice-body"
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: notice.body }}
           />
