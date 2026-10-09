@@ -6,8 +6,11 @@ import { useLanguageStore } from "@/lib/language-store";
 import {
   collection,
   doc,
+  getDocs,
   serverTimestamp,
   setDoc,
+  where,
+  query,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
@@ -15,8 +18,10 @@ import {
   type ComplaintCategory,
   type ComplaintPriority,
   type ComplaintVisibility,
+  type Member,
 } from "@/lib/types";
 import { compressImage, validateImageFile } from "@/lib/utils";
+import { sendHighPriorityAlert } from "@/lib/email";
 import {
   Send,
   Upload,
@@ -34,7 +39,7 @@ export function RaiseComplaintForm({
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
-  const { user, currentSocietyId, currentMember } = useAuth();
+  const { user, currentSocietyId, currentMember, currentSociety } = useAuth();
   const { t } = useLanguageStore();
 
   const [title, setTitle] = useState("");
@@ -149,6 +154,40 @@ export function RaiseComplaintForm({
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // Send email alert for high/critical complaints (non-blocking)
+      if (priority === "high" || priority === "critical") {
+        try {
+          setStatusMessage("Notifying staff…");
+          const staffSnap = await getDocs(
+            query(
+              collection(db, "societies", currentSocietyId, "members"),
+              where("status", "==", "active"),
+              where("role", "in", ["admin", "volunteer"])
+            )
+          );
+          const staffEmails: string[] = [];
+          staffSnap.forEach((d) => {
+            const m = d.data() as Member;
+            if (m.email) staffEmails.push(m.email);
+          });
+
+          // Fire-and-forget — don't await, never block submit
+          sendHighPriorityAlert({
+            societyName: currentSociety?.name ?? "Society",
+            complaintTitle: title.trim(),
+            complaintDescription: description.trim(),
+            priority: priority as "high" | "critical",
+            category,
+            raisedBy: currentMember?.name ?? user.email ?? "Resident",
+            unitId: currentMember?.unitId ?? null,
+            recipientEmails: staffEmails,
+          });
+        } catch (emailErr) {
+          // Never let email failure affect the complaint submission
+          console.warn("Email alert prep failed:", emailErr);
+        }
+      }
 
       // Clear form
       setTitle("");
