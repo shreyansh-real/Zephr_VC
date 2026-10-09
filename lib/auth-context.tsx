@@ -59,6 +59,7 @@ interface AuthContextType {
     memberName: string;
   }) => Promise<{ societyId: string; status: "pending" | "active" }>;
   signOut: () => Promise<void>;
+  leaveResidence: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -454,6 +455,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Leave Residence — sets member status to "removed" in current society,
+  // removes the societyId from the user's profile, then reloads.
+  const leaveResidence = async () => {
+    if (!user || !currentSocietyId) return;
+    const memberRef = doc(db, "societies", currentSocietyId, "members", user.uid);
+    const userRef = doc(db, "users", user.uid);
+    await runTransaction(db, async (tx) => {
+      const memSnap = await tx.get(memberRef);
+      if (memSnap.exists()) {
+        tx.update(memberRef, { status: "removed" });
+      }
+      const userSnap = await tx.get(userRef);
+      if (userSnap.exists()) {
+        const ids: string[] = (userSnap.data() as UserProfile).societyIds || [];
+        tx.update(userRef, {
+          societyIds: ids.filter((id) => id !== currentSocietyId),
+        });
+      }
+    });
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("societydesk_sid");
+    }
+    await loadUserData(user.uid);
+  };
+
   const refreshProfile = async () => {
     if (user) {
       await loadUserData(user.uid);
@@ -481,6 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createSociety,
         joinSocietyByCode,
         signOut,
+        leaveResidence,
         refreshProfile,
       }}
     >

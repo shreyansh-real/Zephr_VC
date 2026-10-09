@@ -108,6 +108,18 @@ export interface UserProfile {
   preferredLanguage: "en" | "hi" | "mr";
 }
 
+// ── societies/{sid}/notices/{nid} ────────────────────────────────────────────
+
+export interface Notice {
+  title: string;
+  body: string;          // HTML string from rich-text editor (sanitized subset)
+  postedBy: string;      // uid
+  postedByName: string;  // display name
+  pinned: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 // ── Utility: Firestore write types (FieldValue allowed) ──────────────────────
 
 export type WithFieldValue<T> = {

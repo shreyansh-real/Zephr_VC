@@ -10,6 +10,7 @@ import {
   orderBy,
   limit,
   getDocs,
+  getDoc,
   startAfter,
   type DocumentSnapshot,
   doc,
@@ -32,6 +33,21 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 
+/** Format a Firestore Timestamp as a readable date string */
+function formatDate(ts: { toDate: () => Date } | null | undefined): string {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate();
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
+}
+
 export function ComplaintsList({
   filterMyOnly = false,
   onSelectComplaint,
@@ -39,8 +55,10 @@ export function ComplaintsList({
   filterMyOnly?: boolean;
   onSelectComplaint: (cid: string) => void;
 }) {
-  const { user, currentSocietyId } = useAuth();
+  const { user, currentSocietyId, currentMember } = useAuth();
   const { t } = useLanguageStore();
+
+  const isStaff = currentMember?.role === "admin" || currentMember?.role === "volunteer";
 
   const [complaints, setComplaints] = useState<Array<{ id: string; data: Complaint }>>([]);
   const [loading, setLoading] = useState(true);
@@ -189,16 +207,26 @@ export function ComplaintsList({
     document.body.removeChild(link);
   };
 
-  // Upvote inline
+  // Track which complaint IDs the current user has already upvoted (client-side cache)
+  const [upvotedIds, setUpvotedIds] = useState<Set<string>>(new Set());
+
+  // Upvote inline — enforces 1 vote per user by checking the upvotes subcollection
   const handleQuickUpvote = async (e: React.MouseEvent, complaintId: string) => {
     e.stopPropagation();
     if (!user || !currentSocietyId) return;
+    if (upvotedIds.has(complaintId)) return; // already voted (client cache)
 
     try {
+      const upvoteRef = doc(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes", user.uid);
+      // Check server-side if already voted
+      const existing = await getDoc(upvoteRef);
+      if (existing.exists()) {
+        setUpvotedIds((prev) => new Set([...prev, complaintId]));
+        return;
+      }
+
       await runTransaction(db, async (tx) => {
         const cRef = doc(db, "societies", currentSocietyId, "complaints", complaintId);
-        const upvoteRef = doc(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes", user.uid);
-
         const currentSnap = await tx.get(cRef);
         if (!currentSnap.exists()) return;
 
@@ -214,6 +242,7 @@ export function ComplaintsList({
         });
       });
 
+      setUpvotedIds((prev) => new Set([...prev, complaintId]));
       // Update local state
       setComplaints((prev) =>
         prev.map((c) =>
@@ -259,15 +288,18 @@ export function ComplaintsList({
             <span>{t.common.exportCsv}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="h-10 px-3.5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 transition-colors min-h-[44px]"
-            title="Print noticeboard view"
-          >
-            <Printer className="w-4 h-4 text-[var(--muted)]" />
-            <span className="hidden sm:inline">{t.common.printSummary}</span>
-          </button>
+          {/* Print button visible only to admins and volunteers */}
+          {isStaff && (
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-10 px-3.5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 transition-colors min-h-[44px]"
+              title="Print noticeboard view"
+            >
+              <Printer className="w-4 h-4 text-[var(--muted)]" />
+              <span className="hidden sm:inline">{t.common.printSummary}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -380,9 +412,14 @@ export function ComplaintsList({
                       </span>
                     </div>
 
-                    <span className="text-xs text-[var(--muted)] tabular-nums">
-                      {timeAgo(data.createdAt)}
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="text-sm font-semibold text-[var(--ink)] tabular-nums">
+                        {formatDate(data.createdAt)}
+                      </span>
+                      <span className="text-xs text-[var(--muted)] tabular-nums">
+                        {timeAgo(data.createdAt)}
+                      </span>
+                    </div>
                   </div>
 
                   <h3 className="text-lg sm:text-xl font-bold font-display text-[var(--ink)] tracking-tight group-hover:underline">
@@ -408,8 +445,13 @@ export function ComplaintsList({
                       <button
                         type="button"
                         onClick={(e) => handleQuickUpvote(e, id)}
-                        className="px-2 py-1 rounded bg-[var(--surface-2)] hover:bg-[var(--surface)] border border-[var(--border-token)] font-bold text-[var(--ink)] flex items-center gap-1 min-h-[30px]"
-                        title="I have this issue too"
+                        disabled={upvotedIds.has(id)}
+                        className={`px-2 py-1 rounded border font-bold flex items-center gap-1 min-h-[30px] transition-colors ${
+                          upvotedIds.has(id)
+                            ? "bg-[var(--accent-tint)] border-[var(--accent)] text-[var(--accent)] cursor-default"
+                            : "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-[var(--border-token)] text-[var(--ink)]"
+                        }`}
+                        title={upvotedIds.has(id) ? t.complaints.upvoted : t.complaints.upvoteAction}
                       >
                         <ThumbsUp className="w-3 h-3" />
                         <span>{data.upvoteCount || 0}</span>

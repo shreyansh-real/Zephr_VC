@@ -17,6 +17,11 @@
   --border-token:  #d3cbba;
   --border-strong: #1a1a18;
 
+  /* Accent / brand blue — used for interactive highlights & focus */
+  --accent:        #1137DE;
+  --accent-tint:   #dde3fa;
+  --accent-fg:     #ffffff;
+
   /* Urgency & status — the ONLY colors in the product */
   --critical:      #d62f1f;
   --critical-tint: #fbe3df;
@@ -53,6 +58,11 @@
   --resolved:      #5db88c;
   --resolved-tint: #14281f;
   --review:        #e6c25c;
+
+  /* Accent stays visible in dark mode */
+  --accent:        #5577f0;
+  --accent-tint:   #0d1a4a;
+  --accent-fg:     #ffffff;
 }
 
 /* ── Tailwind v4 theme mapping ───────────────────────────────── */

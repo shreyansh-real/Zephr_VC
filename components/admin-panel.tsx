@@ -9,6 +9,9 @@ import {
   doc,
   updateDoc,
   setDoc,
+  addDoc,
+  deleteDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { type Member, type UserRole, type Unit } from "@/lib/types";
@@ -24,13 +27,16 @@ import {
   Loader2,
   CheckCircle2,
   RotateCw,
+  Trash2,
+  Megaphone,
+  Pin,
 } from "lucide-react";
 
 export function AdminPanel() {
   const { currentSocietyId, currentSociety, currentMember } = useAuth();
   const { t } = useLanguageStore();
 
-  const [activeTab, setActiveTab] = useState<"pending" | "members" | "units">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "members" | "units" | "notices">("pending");
   const [members, setMembers] = useState<Array<{ id: string; member: Member }>>([]);
   const [units, setUnits] = useState<Array<{ id: string; unit: Unit }>>([]);
   const [loading, setLoading] = useState(true);
@@ -195,6 +201,86 @@ export function AdminPanel() {
     }
   };
 
+  // Remove unit
+  const handleRemoveUnit = async (unitId: string) => {
+    if (!currentSocietyId || !isAdmin) return;
+    if (!confirm("Remove this unit? Members assigned to it will need to be reassigned.")) return;
+    setActionLoading("unit-" + unitId);
+    try {
+      await deleteDoc(doc(db, "societies", currentSocietyId, "units", unitId));
+      setMessage("Unit removed");
+      await refreshData();
+    } catch (err) {
+      console.error("Remove unit error:", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Notice composer state
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeBody, setNoticeBody] = useState("");
+  const [noticePinned, setNoticePinned] = useState(false);
+  const [notices, setNotices] = useState<Array<{ id: string; title: string; pinned: boolean; postedByName: string }>>([]);
+  const [noticeLoading, setNoticeLoading] = useState(false);
+
+  const fetchNotices = useCallback(async () => {
+    if (!currentSocietyId) return;
+    try {
+      const snap = await getDocs(collection(db, "societies", currentSocietyId, "notices"));
+      const list: Array<{ id: string; title: string; pinned: boolean; postedByName: string }> = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ id: d.id, title: data.title, pinned: data.pinned, postedByName: data.postedByName });
+      });
+      list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+      setNotices(list);
+    } catch (err) {
+      console.error("Notices fetch error:", err);
+    }
+  }, [currentSocietyId]);
+
+  useEffect(() => {
+    if (activeTab === "notices") fetchNotices();
+  }, [activeTab, fetchNotices]);
+
+  const handlePostNotice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSocietyId || !currentMember || !noticeTitle.trim() || !noticeBody.trim()) return;
+    setNoticeLoading(true);
+    try {
+      await addDoc(collection(db, "societies", currentSocietyId, "notices"), {
+        title: noticeTitle.trim(),
+        body: noticeBody.trim(),
+        pinned: noticePinned,
+        postedBy: currentMember.email || "",
+        postedByName: currentMember.name,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setNoticeTitle("");
+      setNoticeBody("");
+      setNoticePinned(false);
+      setMessage("Notice posted successfully");
+      await fetchNotices();
+    } catch (err) {
+      console.error("Post notice error:", err);
+    } finally {
+      setNoticeLoading(false);
+    }
+  };
+
+  const handleDeleteNotice = async (noticeId: string) => {
+    if (!currentSocietyId) return;
+    if (!confirm("Delete this notice?")) return;
+    try {
+      await deleteDoc(doc(db, "societies", currentSocietyId, "notices", noticeId));
+      setMessage("Notice deleted");
+      await fetchNotices();
+    } catch (err) {
+      console.error("Delete notice error:", err);
+    }
+  };
   const pendingMembers = members.filter((m) => m.member.status === "pending");
   const activeMembers = members.filter((m) => m.member.status === "active");
 
@@ -304,6 +390,19 @@ export function AdminPanel() {
             <span>{t.admin.unitsTab}</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("notices")}
+          className={`pb-2.5 px-3 text-sm font-bold border-b-2 flex items-center gap-2 ${
+            activeTab === "notices"
+              ? "border-[var(--ink)] text-[var(--ink)]"
+              : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
+          }`}
+        >
+          <Megaphone className="w-4 h-4" />
+          <span>Notices</span>
+        </button>
       </div>
 
       {loading ? (
@@ -442,7 +541,7 @@ export function AdminPanel() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : activeTab === "units" ? (
         /* Units Directory */
         <div className="space-y-6">
           <form
@@ -510,14 +609,121 @@ export function AdminPanel() {
             {units.map(({ id, unit }) => (
               <div
                 key={id}
-                className="p-3 bg-[var(--surface)] border border-[var(--border-token)] rounded-md text-sm"
+                className="p-3 bg-[var(--surface)] border border-[var(--border-token)] rounded-md text-sm flex flex-col gap-2"
               >
-                <p className="font-bold text-[var(--ink)]">{unit.label}</p>
-                <p className="text-xs text-[var(--muted)]">
-                  {unit.group} • {unit.type}
-                </p>
+                <div>
+                  <p className="font-bold text-[var(--ink)]">{unit.label}</p>
+                  <p className="text-xs text-[var(--muted)]">
+                    {unit.group} • {unit.type}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={actionLoading === "unit-" + id}
+                  onClick={() => handleRemoveUnit(id)}
+                  className="mt-auto flex items-center gap-1 text-[10px] font-bold text-[var(--critical)] hover:opacity-80 disabled:opacity-40"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Remove
+                </button>
               </div>
             ))}
+          </div>
+        </div>
+      ) : (
+        /* Notices Tab */
+        <div className="space-y-6">
+          {/* Post new notice */}
+          <form
+            onSubmit={handlePostNotice}
+            className="p-4 bg-[var(--surface)] border border-[var(--border-token)] rounded-lg space-y-3"
+          >
+            <h3 className="text-base font-bold text-[var(--ink)]">Post a Notice</h3>
+            <div>
+              <label className="block text-xs font-bold text-[var(--muted)] mb-1">Title</label>
+              <input
+                type="text"
+                value={noticeTitle}
+                onChange={(e) => setNoticeTitle(e.target.value)}
+                placeholder="Notice title…"
+                required
+                maxLength={200}
+                className="w-full h-10 px-3 rounded border border-[var(--border-token)] bg-[var(--surface)] text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[var(--muted)] mb-1">
+                Body <span className="font-normal opacity-60">(plain text or basic HTML)</span>
+              </label>
+              <textarea
+                value={noticeBody}
+                onChange={(e) => setNoticeBody(e.target.value)}
+                placeholder="Write the notice content here…"
+                required
+                rows={4}
+                maxLength={3000}
+                className="w-full px-3 py-2 rounded border border-[var(--border-token)] bg-[var(--surface)] text-sm font-medium resize-y"
+              />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={noticePinned}
+                onChange={(e) => setNoticePinned(e.target.checked)}
+                className="w-4 h-4 accent-[var(--accent)]"
+              />
+              <Pin className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span className="text-sm font-semibold text-[var(--ink)]">Pin this notice</span>
+            </label>
+            <button
+              type="submit"
+              disabled={noticeLoading}
+              className="h-10 px-4 rounded bg-[var(--ink)] text-[var(--ink-inverse)] text-xs font-bold flex items-center gap-1.5 min-h-[44px] disabled:opacity-50"
+            >
+              {noticeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Megaphone className="w-3.5 h-3.5" />}
+              <span>Post Notice</span>
+            </button>
+          </form>
+
+          {/* Existing notices */}
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase tracking-wider text-[var(--muted)]">
+              Posted Notices ({notices.length})
+            </p>
+            {notices.length === 0 ? (
+              <div className="p-6 text-center bg-[var(--surface)] border border-[var(--border-token)] rounded-lg">
+                <Megaphone className="w-7 h-7 text-[var(--muted)] mx-auto mb-2 opacity-40" />
+                <p className="text-sm font-semibold text-[var(--ink)]">No notices yet</p>
+                <p className="text-xs text-[var(--muted)] mt-1">Use the form above to post your first notice.</p>
+              </div>
+            ) : (
+              notices.map((n) => (
+                <div
+                  key={n.id}
+                  className={`p-3.5 rounded-lg border flex items-start justify-between gap-3 ${
+                    n.pinned
+                      ? "bg-[var(--accent-tint)] border-[var(--accent)]"
+                      : "bg-[var(--surface)] border-[var(--border-token)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {n.pinned && <Pin className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />}
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-[var(--ink)] truncate">{n.title}</p>
+                      <p className="text-xs text-[var(--muted)]">by {n.postedByName}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteNotice(n.id)}
+                    className="shrink-0 p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--critical)] transition-colors"
+                    title="Delete notice"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

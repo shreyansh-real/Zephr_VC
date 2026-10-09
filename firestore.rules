@@ -208,6 +208,28 @@ service cloud.firestore {
         allow delete: if isAdmin(sid);
       }
 
+      // ── /societies/{sid}/notices/{nid} ────────────────────────────────────
+      // Staff (admin/volunteer) can create, update, delete notices.
+      // Active members can read (for the public noticeboard panel).
+
+      match /notices/{nid} {
+        allow read:   if isActiveMember(sid);
+        allow create: if isStaff(sid) &&
+          request.resource.data.keys().hasOnly(
+            ["title", "body", "pinned", "postedBy", "postedByName", "createdAt", "updatedAt"]
+          ) &&
+          request.resource.data.title is string &&
+          request.resource.data.title.size() >= 1 &&
+          request.resource.data.title.size() <= 200 &&
+          request.resource.data.body is string &&
+          request.resource.data.body.size() <= 3000 &&
+          request.resource.data.pinned is bool;
+        allow update: if isStaff(sid) &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.postedBy == resource.data.postedBy;
+        allow delete: if isStaff(sid);
+      }
+
       // ── /societies/{sid}/complaints/{cid} ──────────────────────────────────
 
       match /complaints/{cid} {

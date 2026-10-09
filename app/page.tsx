@@ -10,6 +10,7 @@ import { ComplaintsList } from "@/components/complaints-list";
 import { RaiseComplaintForm } from "@/components/raise-complaint-form";
 import { ComplaintDetail } from "@/components/complaint-detail";
 import { AdminPanel } from "@/components/admin-panel";
+import { NoticesPanel } from "@/components/notices-panel";
 import { Download, X } from "lucide-react";
 
 export default function HomePage() {
@@ -196,10 +197,30 @@ export default function HomePage() {
             onSelectComplaint={(cid) => setSelectedComplaintId(cid)}
           />
         ) : (
-          <ComplaintsList
-            filterMyOnly={false}
-            onSelectComplaint={(cid) => setSelectedComplaintId(cid)}
-          />
+          /* Public Noticeboard — two-column: notices panel left, complaints right */
+          <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 relative">
+            {/* Left — Admin Notices Panel */}
+            <aside className="lg:w-72 xl:w-80 shrink-0 pt-6 pb-3 lg:pb-6">
+              <div className="lg:sticky lg:top-24">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--muted)]">
+                    Society Notices
+                  </span>
+                </div>
+                <div className="bg-[var(--surface)] border border-[var(--border-token)] rounded-xl p-4">
+                  <NoticesPanel />
+                </div>
+              </div>
+            </aside>
+
+            {/* Right — Complaints List */}
+            <div className="flex-1 min-w-0">
+              <ComplaintsList
+                filterMyOnly={false}
+                onSelectComplaint={(cid) => setSelectedComplaintId(cid)}
+              />
+            </div>
+          </div>
         )}
       </div>
     </main>

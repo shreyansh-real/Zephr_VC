@@ -275,7 +275,8 @@ export function RaiseComplaintForm({
           />
         </div>
 
-        {/* Visibility: Public vs Private */}
+        {/* Visibility: Public vs Private — only staff can set Private */}
+        {(currentMember?.role === "admin" || currentMember?.role === "volunteer") && (
         <div>
           <label className="block text-sm font-bold text-[var(--ink)] mb-2">
             {t.complaints.visibility}
@@ -314,6 +315,7 @@ export function RaiseComplaintForm({
             </button>
           </div>
         </div>
+        )}
 
         {/* Photos Attachment */}
         <div>
