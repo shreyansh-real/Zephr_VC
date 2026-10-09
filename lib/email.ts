@@ -11,6 +11,10 @@
 const RESEND_API_KEY = process.env.NEXT_PUBLIC_RESEND_API_KEY ?? "";
 const FROM_ADDRESS = "SocietyDesk <onboarding@resend.dev>";
 
+// Resend free tier: can only send to the account's verified email.
+// All society alerts are forwarded to this address until a custom domain is added.
+const ADMIN_ALERT_EMAIL = "codingaiagents@gmail.com";
+
 export interface AlertPayload {
   societyName: string;
   complaintTitle: string;
@@ -32,11 +36,14 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
     return;
   }
 
-  const validEmails = payload.recipientEmails.filter(Boolean);
-  if (validEmails.length === 0) return;
-
   const priorityLabel = payload.priority === "critical" ? "CRITICAL" : "HIGH";
   const priorityColor = payload.priority === "critical" ? "#dc2626" : "#ea580c";
+
+  // Staff list for display in email body (actual send always goes to ADMIN_ALERT_EMAIL)
+  const staffList = payload.recipientEmails.filter(Boolean);
+  const staffHtml = staffList.length > 0
+    ? staffList.map(e => `<li style="font-size:12px;color:#5f5b51;">${e}</li>`).join("")
+    : "<li style=\"font-size:12px;color:#5f5b51;\">No staff emails on record</li>";
 
   const html = `
 <!DOCTYPE html>
@@ -128,6 +135,16 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
                   </td>
                 </tr>
 
+                <!-- Staff recipients note -->
+                <tr>
+                  <td style="padding-top:20px;">
+                    <p style="margin:0;font-size:11px;font-weight:800;color:#5f5b51;text-transform:uppercase;letter-spacing:0.08em;">Staff to Notify</p>
+                    <ul style="margin:6px 0 0;padding-left:16px;">
+                      ${staffHtml}
+                    </ul>
+                  </td>
+                </tr>
+
               </table>
             </td>
           </tr>
@@ -158,7 +175,7 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
       },
       body: JSON.stringify({
         from: FROM_ADDRESS,
-        to: validEmails,
+        to: [ADMIN_ALERT_EMAIL],
         subject: `[${priorityLabel}] ${payload.complaintTitle} — ${payload.societyName}`,
         html,
       }),
