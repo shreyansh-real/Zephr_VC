@@ -45,8 +45,17 @@ export const metadata: Metadata = {
     "Available in English, Hindi, and Marathi.",
   keywords: ["society", "complaint", "housing", "maintenance", "RWA"],
   authors: [{ name: "Sochi" }],
-  robots: "noindex, nofollow", // private app — no public indexing
+  robots: "noindex, nofollow",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.ico",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

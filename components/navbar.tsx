@@ -47,8 +47,8 @@ export function Navbar({
           {/* Brand & Society Switcher */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-md bg-[var(--ink)] text-[var(--ink-inverse)] flex items-center justify-center font-black text-lg tracking-wider">
-                SD
+              <div className="w-9 h-9 rounded-md overflow-hidden border border-[var(--border-token)] shadow-sm shrink-0">
+                <img src="/favicon.svg" alt="Sochi" className="w-full h-full object-cover" />
               </div>
               <span className="font-extrabold text-lg tracking-tight font-display hidden sm:inline-block">
                 {t.appName}
