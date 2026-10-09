@@ -34,7 +34,9 @@ import {
   Lock,
   Globe,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
+import { generateAIReply } from "@/lib/ai-reply";
 
 export function ComplaintDetail({
   complaintId,
@@ -55,6 +57,8 @@ export function ComplaintDetail({
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submittingUpdate, setSubmittingUpdate] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState("");
   const [newStatus, setNewStatus] = useState<ComplaintStatus>("open");
   const [selectedAssignee, setSelectedAssignee] = useState<string>("");
@@ -225,6 +229,30 @@ export function ComplaintDetail({
       console.error("Update post error:", err);
     } finally {
       setSubmittingUpdate(false);
+    }
+  };
+
+  // Generate AI reply (staff only)
+  const handleAIReply = async () => {
+    if (!complaint || !isStaff) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const reply = await generateAIReply({
+        complaintTitle: complaint.title,
+        complaintDescription: complaint.description,
+        complaintCategory: complaint.category,
+        complaintPriority: complaint.priority,
+        complaintStatus: complaint.status,
+        previousUpdates: updates.map((u) => u.update.message),
+        staffRole: currentMember?.role || "staff",
+        societyName: undefined,
+      });
+      setUpdateMessage(reply);
+    } catch (err: unknown) {
+      setAiError(err instanceof Error ? err.message : "AI generation failed.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -475,6 +503,30 @@ export function ComplaintDetail({
               )}
 
               <div>
+                {/* AI Reply button — staff only */}
+                {isStaff && (
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-[var(--muted)] uppercase">
+                      Reply Message
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAIReply}
+                      disabled={aiLoading}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent-tint)] disabled:opacity-50 transition-colors"
+                    >
+                      {aiLoading ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      {aiLoading ? "Generating…" : "AI Suggest Reply"}
+                    </button>
+                  </div>
+                )}
+                {aiError && (
+                  <p className="text-xs text-[var(--critical)] mb-1.5">{aiError}</p>
+                )}
                 <textarea
                   value={updateMessage}
                   onChange={(e) => setUpdateMessage(e.target.value)}
