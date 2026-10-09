@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   type User,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
@@ -244,12 +245,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [userSocieties]
   );
 
-  // Google Sign-In (redirect-based — works correctly with static export + Firebase Hosting)
+  // Google Sign-In
+  // Uses popup on localhost (redirect fails silently on non-hosted origins),
+  // uses redirect on production (Firebase Hosting / Vercel).
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithRedirect(auth, provider);
-    // Page will redirect to Google, then come back — getRedirectResult handles completion
+
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    if (isLocalhost) {
+      // Popup works reliably on localhost
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        await loadUserData(result.user.uid);
+      }
+    } else {
+      // Redirect works reliably on production (Firebase Hosting)
+      await signInWithRedirect(auth, provider);
+    }
   };
 
   // Setup reCAPTCHA for Phone Auth

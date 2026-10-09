@@ -76,12 +76,11 @@ export function AuthCard() {
     try {
       setLoading(true);
       await signInWithGoogle();
-      // Page redirects to Google — loading stays true until redirect completes
-      // (component will unmount on redirect, no need to setLoading(false))
     } catch (err: unknown) {
       console.error("Google sign in error:", err);
       const message = err instanceof Error ? err.message : t.common.error;
       setError(message);
+    } finally {
       setLoading(false);
     }
   };

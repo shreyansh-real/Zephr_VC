@@ -10,7 +10,7 @@ import { ComplaintsList } from "@/components/complaints-list";
 import { RaiseComplaintForm } from "@/components/raise-complaint-form";
 import { ComplaintDetail } from "@/components/complaint-detail";
 import { AdminPanel } from "@/components/admin-panel";
-import { Loader2, Download, X } from "lucide-react";
+import { Download, X } from "lucide-react";
 
 export default function HomePage() {
   const { user, loading, currentSocietyId, currentMember } = useAuth();
@@ -48,9 +48,30 @@ export default function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-[var(--bg)] text-[var(--ink)]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--ink)] mb-3" />
-        <p className="font-bold text-sm tracking-tight">{t.common.loading}</p>
+      <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)]">
+        <div className="flex flex-col items-center gap-5">
+          {/* Logo mark */}
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[var(--border-token)] shadow-md">
+              <img src="/favicon.svg" alt="SocietyDesk" className="w-full h-full object-cover" />
+            </div>
+            {/* Pulsing ring */}
+            <span className="absolute inset-0 rounded-2xl animate-ping border-2 border-[var(--border-strong)] opacity-20" />
+          </div>
+
+          {/* Brand name */}
+          <div className="flex flex-col items-center gap-1.5">
+            <span className="text-lg font-black tracking-tight text-[var(--ink)] font-display">
+              SocietyDesk
+            </span>
+            {/* Animated dots */}
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:0ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:150ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:300ms]" />
+            </div>
+          </div>
+        </div>
       </main>
     );
   }
