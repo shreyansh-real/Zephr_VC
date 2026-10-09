@@ -12,6 +12,7 @@ import {
   getDocs,
   getDoc,
   startAfter,
+  onSnapshot,
   type DocumentSnapshot,
   doc,
   runTransaction,
@@ -72,56 +73,58 @@ export function ComplaintsList({
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50; // onSnapshot — no pagination needed for typical society sizes
 
   useEffect(() => {
-    let active = true;
-    if (!currentSocietyId) return;
+    if (!currentSocietyId || !user) return;
 
-    (async () => {
-      try {
-        const complaintsCol = collection(db, "societies", currentSocietyId, "complaints");
-        const constraints: unknown[] = [];
+    setLoading(true);
+    const complaintsCol = collection(db, "societies", currentSocietyId, "complaints");
 
-        if (filterMyOnly && user) {
-          constraints.push(where("createdBy", "==", user.uid));
-        }
-        if (statusFilter !== "all") {
-          constraints.push(where("status", "==", statusFilter));
-        }
-        if (categoryFilter !== "all") {
-          constraints.push(where("category", "==", categoryFilter));
-        }
-        if (priorityFilter !== "all") {
-          constraints.push(where("priority", "==", priorityFilter));
-        }
+    // For "My Issues": only filter by createdBy to avoid composite index requirements.
+    // Additional filters (status/category/priority) are applied client-side.
+    // For "All Issues": apply server-side filters normally.
+    const constraints: unknown[] = [];
 
-        constraints.push(orderBy("createdAt", "desc"));
-        constraints.push(limit(PAGE_SIZE));
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const q = query(complaintsCol, ...(constraints as any));
-        const snap = await getDocs(q);
-        if (!active) return;
-
-        const list: Array<{ id: string; data: Complaint }> = [];
-        snap.forEach((d) => {
-          list.push({ id: d.id, data: d.data() as Complaint });
-        });
-
-        setComplaints(list);
-        setLastDoc(snap.docs[snap.docs.length - 1] || null);
-        setHasMore(snap.docs.length === PAGE_SIZE);
-      } catch (err) {
-        console.error("Fetch complaints error:", err);
-      } finally {
-        if (active) setLoading(false);
+    if (filterMyOnly) {
+      // Only the createdBy filter + orderBy — no composite index needed
+      constraints.push(where("createdBy", "==", user.uid));
+      constraints.push(orderBy("createdAt", "desc"));
+    } else {
+      if (statusFilter !== "all") {
+        constraints.push(where("status", "==", statusFilter));
       }
-    })();
+      if (categoryFilter !== "all") {
+        constraints.push(where("category", "==", categoryFilter));
+      }
+      if (priorityFilter !== "all") {
+        constraints.push(where("priority", "==", priorityFilter));
+      }
+      constraints.push(orderBy("createdAt", "desc"));
+      constraints.push(limit(PAGE_SIZE));
+    }
 
-    return () => {
-      active = false;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const q = query(complaintsCol, ...(constraints as any));
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const list: Array<{ id: string; data: Complaint }> = [];
+        snap.forEach((d) => list.push({ id: d.id, data: d.data() as Complaint }));
+        setComplaints(list);
+        setLoading(false);
+        // Keep hasMore/lastDoc for the non-realtime load-more path (public tab only)
+        setLastDoc(snap.docs[snap.docs.length - 1] || null);
+        setHasMore(!filterMyOnly && snap.docs.length === PAGE_SIZE);
+      },
+      (err) => {
+        console.error("Complaints snapshot error:", err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsub();
   }, [currentSocietyId, filterMyOnly, user, statusFilter, categoryFilter, priorityFilter]);
 
   const handleLoadMore = async () => {
@@ -168,8 +171,14 @@ export function ComplaintsList({
     }
   };
 
-  // Client-side search filtering on current results
+  // Client-side filtering: search always; status/category/priority also applied when filterMyOnly
+  // (those filters are skipped server-side for "My Issues" to avoid composite index requirements)
   const filteredComplaints = complaints.filter(({ data }) => {
+    if (filterMyOnly) {
+      if (statusFilter !== "all" && data.status !== statusFilter) return false;
+      if (categoryFilter !== "all" && data.category !== categoryFilter) return false;
+      if (priorityFilter !== "all" && data.priority !== priorityFilter) return false;
+    }
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -256,7 +265,7 @@ export function ComplaintsList({
     }
   };
 
-  const openCount = complaints.filter((c) => c.data.status === "open").length;
+  const openCount = filteredComplaints.filter((c) => c.data.status === "open").length;
 
   return (
     <div className="w-full max-w-4xl mx-auto py-6">

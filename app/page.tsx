@@ -235,7 +235,7 @@ export default function HomePage() {
           <div className="py-6">
             <RaiseComplaintForm
               onSuccess={() => {
-                setActiveTab("complaints");
+                setActiveTab("my");
                 setSelectedComplaintId(null);
               }}
               onCancel={() => setActiveTab("complaints")}
