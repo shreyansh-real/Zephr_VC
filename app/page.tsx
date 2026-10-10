@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguageStore } from "@/lib/language-store";
 import { Navbar } from "@/components/navbar";
@@ -11,6 +12,7 @@ import { RaiseComplaintForm } from "@/components/raise-complaint-form";
 import { ComplaintDetail } from "@/components/complaint-detail";
 import { AdminPanel } from "@/components/admin-panel";
 import { NoticesPanel } from "@/components/notices-panel";
+import { Preloader } from "@/components/preloader";
 import { Download, X } from "lucide-react";
 
 export default function HomePage() {
@@ -25,38 +27,22 @@ export default function HomePage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
-  // Multilingual Hello cycling state
-  const HELLO_WORDS = [
-    { word: "Hello",      lang: "English" },
-    { word: "नमस्ते",     lang: "Hindi" },
-    { word: "नमस्कार",   lang: "Marathi" },
-    { word: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ", lang: "Punjabi" },
-    { word: "નમસ્તે",    lang: "Gujarati" },
-    { word: "வணக்கம்",  lang: "Tamil" },
-    { word: "నమస్కారం",  lang: "Telugu" },
-    { word: "ಹಲೋ",       lang: "Kannada" },
-    { word: "ഹലോ",       lang: "Malayalam" },
-    { word: "আদাব",      lang: "Bengali" },
-    { word: "سلام",      lang: "Urdu" },
-  ];
-  const [helloIdx, setHelloIdx] = useState(0);
-  const [helloVisible, setHelloVisible] = useState(true);
-  const helloTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Preloader: show once per session on first sign-in (null → user transition)
+  const [showPreloader, setShowPreloader] = useState(false);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!loading) return;
-    const cycle = () => {
-      setHelloVisible(false);
-      helloTimer.current = setTimeout(() => {
-        setHelloIdx((i) => (i + 1) % HELLO_WORDS.length);
-        setHelloVisible(true);
-        helloTimer.current = setTimeout(cycle, 1600);
-      }, 300);
-    };
-    helloTimer.current = setTimeout(cycle, 1600);
-    return () => { if (helloTimer.current) clearTimeout(helloTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+    // undefined = not yet known (loading), null = logged out, string = logged in
+    const prev = prevUserRef.current;
+    const curr = user?.uid ?? null;
+
+    // Trigger preloader when transitioning from logged-out → logged-in
+    if (prev === null && curr !== null) {
+      setShowPreloader(true);
+    }
+
+    prevUserRef.current = curr;
+  }, [user]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,51 +65,14 @@ export default function HomePage() {
     setDeferredPrompt(null);
   };
 
-  // Loading state — multilingual Hello screen
+  // Firebase auth initialising — brief blank screen with minimal indicator
   if (loading) {
-    const current = HELLO_WORDS[helloIdx];
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)]">
-        <div className="flex flex-col items-center gap-6">
-          {/* Logo */}
-          <div className="relative">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[var(--border-token)] shadow-md">
-              <img src="/favicon.svg" alt="SocietyDesk" className="w-full h-full object-cover" />
-            </div>
-            <span className="absolute inset-0 rounded-2xl animate-ping border-2 border-[var(--border-strong)] opacity-20" />
-          </div>
-
-          {/* Cycling hello word */}
-          <div className="flex flex-col items-center gap-1 min-h-[64px] justify-center">
-            <span
-              key={helloIdx}
-              className="text-4xl font-black font-display text-[var(--ink)] transition-all duration-300"
-              style={{
-                opacity: helloVisible ? 1 : 0,
-                transform: helloVisible ? "translateY(0)" : "translateY(10px)",
-              }}
-            >
-              {current.word}
-            </span>
-            <span
-              className="text-xs font-semibold text-[var(--muted)] tracking-wide uppercase transition-opacity duration-300"
-              style={{ opacity: helloVisible ? 0.7 : 0 }}
-            >
-              {current.lang}
-            </span>
-          </div>
-
-          {/* Brand name + dots */}
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-sm font-bold tracking-tight text-[var(--muted)] font-display">
-              SocietyDesk
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:0ms]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:150ms]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink)] opacity-30 animate-bounce [animation-delay:300ms]" />
-            </div>
-          </div>
+      <main className="min-h-screen flex items-center justify-center" style={{ background: "#1A1A18" }}>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:0ms]"   style={{ background: "#f5f0e8" }} />
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:150ms]" style={{ background: "#f5f0e8" }} />
+          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:300ms]" style={{ background: "#f5f0e8" }} />
         </div>
       </main>
     );
@@ -189,7 +138,15 @@ export default function HomePage() {
 
   // Active Society View
   return (
-    <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
+    <>
+      {/* Preloader — overlays dashboard on first sign-in, then fades away */}
+      <AnimatePresence>
+        {showPreloader && (
+          <Preloader onComplete={() => setShowPreloader(false)} />
+        )}
+      </AnimatePresence>
+
+      <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
       <Navbar activeTab={activeTab} onTabChange={(tab) => {
         setActiveTab(tab);
         setSelectedComplaintId(null);
@@ -276,5 +233,6 @@ export default function HomePage() {
         )}
       </div>
     </main>
+    </>
   );
 }
