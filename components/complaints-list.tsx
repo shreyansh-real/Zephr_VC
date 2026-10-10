@@ -268,32 +268,32 @@ export function ComplaintsList({
   const openCount = filteredComplaints.filter((c) => c.data.status === "open").length;
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full max-w-4xl mx-auto py-6">
       {/* Hero Stats (Design.md: big condensed numeral) */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8 pb-8 border-b border-[var(--border-token)]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 pb-6 border-b border-[var(--border-token)]">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
             {filterMyOnly ? "Your Issues" : "Active Society Noticeboard"}
           </span>
-          <div className="flex items-baseline gap-4 mt-2">
-            <span className="text-7xl sm:text-8xl font-black font-display tracking-tight text-[var(--ink)] tabular-nums">
+          <div className="flex items-baseline gap-3 mt-1">
+            <span className="text-6xl sm:text-7xl font-black font-display tracking-tight text-[var(--ink)] tabular-nums">
               {openCount}
             </span>
-            <span className="text-lg sm:text-2xl font-bold font-display text-[var(--muted)]">
+            <span className="text-xl sm:text-2xl font-bold font-display text-[var(--muted)]">
               open issues requiring attention
             </span>
           </div>
         </div>
 
         {/* CSV & Print Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportCsv}
-            className="h-12 px-5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-sm font-bold text-[var(--ink)] flex items-center gap-2 transition-colors min-h-[44px]"
+            className="h-10 px-3.5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 transition-colors min-h-[44px]"
             title="Download CSV report"
           >
-            <FileSpreadsheet className="w-5 h-5 text-[var(--muted)]" />
+            <FileSpreadsheet className="w-4 h-4 text-[var(--muted)]" />
             <span>{t.common.exportCsv}</span>
           </button>
 
@@ -302,10 +302,10 @@ export function ComplaintsList({
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-12 px-5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-sm font-bold text-[var(--ink)] flex items-center gap-2 transition-colors min-h-[44px]"
+              className="h-10 px-3.5 rounded-md border border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 transition-colors min-h-[44px]"
               title="Print noticeboard view"
             >
-              <Printer className="w-5 h-5 text-[var(--muted)]" />
+              <Printer className="w-4 h-4 text-[var(--muted)]" />
               <span className="hidden sm:inline">{t.common.printSummary}</span>
             </button>
           )}
@@ -313,30 +313,30 @@ export function ComplaintsList({
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-[var(--surface)] p-5 rounded-lg border border-[var(--border-token)] mb-8 space-y-4">
+      <div className="bg-[var(--surface)] p-3.5 rounded-lg border border-[var(--border-token)] mb-6 space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search className="w-5 h-5 absolute left-4 top-3.5 text-[var(--muted)]" />
+          <Search className="w-4 h-4 absolute left-3 top-3.5 text-[var(--muted)]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.common.search}
-            className="w-full h-12 pl-12 pr-4 rounded-md border border-[var(--border-token)] bg-[var(--surface)] text-base font-medium text-[var(--ink)] focus:border-[var(--border-strong)] transition-colors"
+            className="w-full h-11 pl-9 pr-3 rounded-md border border-[var(--border-token)] bg-[var(--surface)] text-sm font-medium text-[var(--ink)] focus:border-[var(--border-strong)] transition-colors"
           />
         </div>
 
         {/* Filter Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {/* Status Filter */}
           <div>
-            <label className="block text-xs font-bold uppercase text-[var(--muted)] mb-2">
+            <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
               {t.common.status}
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full h-11 px-3 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-sm font-bold text-[var(--ink)]"
+              className="w-full h-10 px-2.5 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-xs font-bold text-[var(--ink)]"
             >
               <option value="all">{t.common.all} Statuses</option>
               <option value="open">{t.statuses.open}</option>
@@ -349,13 +349,13 @@ export function ComplaintsList({
 
           {/* Category Filter */}
           <div>
-            <label className="block text-xs font-bold uppercase text-[var(--muted)] mb-2">
+            <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
               {t.complaints.category}
             </label>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full h-11 px-3 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-sm font-bold text-[var(--ink)]"
+              className="w-full h-10 px-2.5 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-xs font-bold text-[var(--ink)]"
             >
               <option value="all">{t.common.all} Categories</option>
               <option value="water">{t.categories.water}</option>
@@ -371,7 +371,7 @@ export function ComplaintsList({
 
           {/* Priority Filter */}
           <div>
-            <label className="block text-xs font-bold uppercase text-[var(--muted)] mb-2">
+            <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">
               {t.complaints.priority}
             </label>
             <select

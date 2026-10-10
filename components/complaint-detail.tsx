@@ -332,14 +332,14 @@ export function ComplaintDetail({
   }
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full max-w-3xl mx-auto py-6">
       {/* Back button */}
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 mb-6 px-4 py-2 text-sm font-bold rounded border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-[var(--ink)] transition-colors min-h-[48px]"
+        className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 text-xs font-bold rounded border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-[var(--ink)] transition-colors min-h-[44px]"
       >
-        <ArrowLeft className="w-5 h-5" />
+        <ArrowLeft className="w-4 h-4" />
         <span>{t.common.back} to Noticeboard</span>
       </button>
 
@@ -347,20 +347,20 @@ export function ComplaintDetail({
       <div className="bg-[var(--surface)] border border-[var(--border-token)] rounded-lg overflow-hidden shadow-xs">
         <div className="flex">
           <UrgencyBar level={complaint.priority} />
-          <div className="flex-1 p-8 lg:p-10">
+          <div className="flex-1 p-6 sm:p-8">
             {/* Header badges */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex flex-wrap items-center gap-2">
                 <UrgencyChip level={complaint.priority} />
                 <StatusChip status={complaint.status} />
-                <span className="px-3 py-1 rounded text-sm font-semibold bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)]">
+                <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border-token)]">
                   {t.categories[complaint.category]}
                 </span>
-                <span className="inline-flex items-center gap-1 text-sm text-[var(--muted)]">
+                <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
                   {complaint.visibility === "public" ? (
-                    <Globe className="w-4 h-4" />
+                    <Globe className="w-3.5 h-3.5" />
                   ) : (
-                    <Lock className="w-4 h-4" />
+                    <Lock className="w-3.5 h-3.5" />
                   )}
                   <span>{complaint.visibility}</span>
                 </span>
@@ -372,13 +372,13 @@ export function ComplaintDetail({
                   type="button"
                   disabled={hasUpvoted}
                   onClick={handleUpvote}
-                  className={`h-12 px-5 rounded-md border text-sm font-bold flex items-center gap-2 transition-all min-h-[48px] ${
+                  className={`h-10 px-3.5 rounded-md border text-xs font-bold flex items-center gap-1.5 transition-all min-h-[44px] ${
                     hasUpvoted
                       ? "bg-[var(--surface-2)] border-[var(--border-strong)] text-[var(--ink)] cursor-default"
                       : "border-[var(--border-token)] hover:border-[var(--border-strong)] bg-[var(--surface)] text-[var(--ink)]"
                   }`}
                 >
-                  <ThumbsUp className={`w-4 h-4 ${hasUpvoted ? "fill-current" : ""}`} />
+                  <ThumbsUp className={`w-3.5 h-3.5 ${hasUpvoted ? "fill-current" : ""}`} />
                   <span>
                     {hasUpvoted ? t.complaints.upvoted : t.complaints.upvoteAction} (
                     {complaint.upvoteCount || 0})
@@ -388,12 +388,12 @@ export function ComplaintDetail({
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-[var(--ink)] mb-4">
+            <h1 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-[var(--ink)] mb-3">
               {complaint.title}
             </h1>
 
             {/* Meta info */}
-            <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-sm text-[var(--muted)] mb-8 pb-6 border-b border-[var(--border-token)]">
+            <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[var(--muted)] mb-6 pb-4 border-b border-[var(--border-token)]">
               <span>
                 Unit: <strong className="text-[var(--ink)]">{complaint.unitId || "General"}</strong>
               </span>
@@ -413,7 +413,7 @@ export function ComplaintDetail({
             </div>
 
             {/* Description */}
-            <div className="prose text-lg text-[var(--ink)] leading-relaxed mb-8 whitespace-pre-wrap">
+            <div className="prose text-base text-[var(--ink)] leading-relaxed mb-6 whitespace-pre-wrap">
               {complaint.description}
             </div>
 
