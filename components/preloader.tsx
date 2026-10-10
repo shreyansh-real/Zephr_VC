@@ -17,12 +17,12 @@ const WORDS = [
   { word: "Sochi",        lang: ""          },
 ];
 
-// Timing (ms) — kept tight so the whole sequence feels snappy
-const IN_MS   = 260;  // word slides in
-const HOLD_MS = 220;  // word holds visible
-const OUT_MS  = 200;  // word slides out
-const LAST_HOLD_MS = 520; // extra hold on "Sochi"
-const EXIT_MS = 480;  // full-screen fade-out
+// Timing (ms) — smooth and generous, no rushing
+const IN_MS   = 320;  // word slides in — slower for smoothness
+const HOLD_MS = 380;  // word holds visible — longer to read comfortably
+const OUT_MS  = 280;  // word slides out
+const LAST_HOLD_MS = 650; // extra hold on "Sochi"
+const EXIT_MS = 500;  // full-screen fade-out — smooth exit
 
 interface PreloaderProps {
   onComplete: () => void;
@@ -74,14 +74,14 @@ export function Preloader({ onComplete }: PreloaderProps) {
   const isLast  = index === WORDS.length - 1;
   const isOut   = phase === "out";
 
-  // Single word translate — GPU composited, no per-letter stagger lag
+  // Single word translate — GPU composited, smooth easing
   const wordAnim = {
-    initial:  { y: "60%", opacity: 0 },
+    initial:  { y: "50%", opacity: 0 },
     animate:  isOut
-      ? { y: "-60%", opacity: 0,
-          transition: { duration: OUT_MS / 1000, ease: [0.55, 0, 1, 0.45] as const } }
+      ? { y: "-50%", opacity: 0,
+          transition: { duration: OUT_MS / 1000, ease: [0.4, 0, 0.6, 1] as const } }
       : { y: "0%",   opacity: 1,
-          transition: { duration: IN_MS / 1000,  ease: [0.22, 1, 0.36, 1] as const } },
+          transition: { duration: IN_MS / 1000,  ease: [0.16, 1, 0.3, 1] as const } },
   };
 
   return (
@@ -98,7 +98,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
           <div className="flex flex-col items-center gap-2 select-none">
             {/* Word */}
             <div className="overflow-hidden" style={{ lineHeight: 1 }}>
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="popLayout" initial={false}>
                 <motion.span
                   key={`${index}-word`}
                   initial={wordAnim.initial}
@@ -106,7 +106,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
                   className="block font-black leading-none tracking-tight"
                   style={{
                     fontSize: "clamp(3.5rem, 11vw, 7.5rem)",
-                    color: isLast ? "#1137DE" : "#f5f0e8",
+                    color: isLast ? "#FAF8F3" : "#f5f0e8", // warm white for Sochi
                     fontFamily: "var(--font-display, 'Arial Black', Arial, sans-serif)",
                     willChange: "transform, opacity",
                   }}
@@ -118,15 +118,15 @@ export function Preloader({ onComplete }: PreloaderProps) {
 
             {/* Language label */}
             <div className="overflow-hidden h-4">
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="popLayout" initial={false}>
                 {word.lang && (
                   <motion.span
                     key={`${index}-lang`}
-                    initial={{ y: "100%", opacity: 0 }}
+                    initial={{ y: "40%", opacity: 0 }}
                     animate={{ y: "0%",   opacity: 0.38,
-                      transition: { duration: 0.22, delay: 0.08, ease: "easeOut" } }}
-                    exit={{    y: "-100%", opacity: 0,
-                      transition: { duration: 0.16, ease: "easeIn" } }}
+                      transition: { duration: 0.28, delay: 0.12, ease: "easeOut" } }}
+                    exit={{    y: "-40%", opacity: 0,
+                      transition: { duration: 0.2, ease: "easeIn" } }}
                     className="block text-[11px] font-bold uppercase tracking-[0.22em]"
                     style={{ color: "#5f5b51" }}
                   >

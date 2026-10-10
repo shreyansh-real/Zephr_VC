@@ -36,13 +36,13 @@
   --review:        #8a6a00;
 }
 
-/* ── Dark mode (warm, not pure black) ────────────────────────── */
+/* ── Dark mode (warm charcoal base #1A1A18) ────────────────────────── */
 .dark {
-  --bg:            #161511;
-  --surface:       #201e19;
-  --surface-2:     #2a2721;
+  --bg:            #1A1A18;
+  --surface:       #252320;
+  --surface-2:     #302c27;
   --ink:           #f2ede3;
-  --ink-inverse:   #161511;
+  --ink-inverse:   #1A1A18;
   --muted:         #a8a292;
   --border-token:  #3b372f;
   --border-strong: #f2ede3;
