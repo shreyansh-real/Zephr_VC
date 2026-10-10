@@ -2,9 +2,10 @@
  * Email notifications via EmailJS (client-side, no backend required).
  *
  * Sends Sochi-branded alerts for high/critical complaints to all active
- * staff members (admin + volunteer) of the society simultaneously.
+ * staff members (admin + volunteer) of the SAME SOCIETY ONLY.
  *
  * Sender name: "Sochi"
+ * Uses rich formatting for beautiful, clean emails
  * Free tier: 200 emails/month
  */
 
@@ -21,12 +22,18 @@ export interface AlertPayload {
   category: string;
   raisedBy: string;
   unitId: string | null;
-  recipientEmails: string[]; // all active admin + volunteer emails from Firestore
+  recipientEmails: string[]; // all active admin + volunteer emails from SAME society only
+  recipientNames?: Record<string, string>; // optional: email → name mapping
 }
 
 /**
- * Send a Sochi-branded email alert to every staff member when a high/critical
- * complaint is raised. One email per recipient so each gets a personal delivery.
+ * Send a Sochi-branded email alert to every staff member of a society
+ * when a high/critical complaint is raised.
+ *
+ * IMPORTANT: This only sends to members of the SAME SOCIETY.
+ * The recipientEmails list is already filtered in raise-complaint-form.tsx
+ * to only include admins/volunteers from currentSocietyId.
+ *
  * Uses EmailJS REST API with private key for strict-mode accounts.
  * Fully non-blocking — never throws, never delays complaint submission.
  */
@@ -46,19 +53,67 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
 
   // Send one request per recipient in parallel
   const sends = validEmails.map((email) => {
+    // Get recipient name if available
+    const recipientName = payload.recipientNames?.[email] || "Staff Member";
+
+    // Create a beautifully formatted plain-text body with clear hierarchy
+    const emailBody = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🏠 SOCHI — Housing Society Management
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hello ${recipientName},
+
+A new ${priorityLabel} priority complaint has been filed in ${payload.societyName} that requires your immediate attention.
+
+╔════════════════════════════════════════════╗
+║  ${priorityLabel} PRIORITY COMPLAINT
+╚════════════════════════════════════════════╝
+
+📌 COMPLAINT DETAILS:
+   Title: ${payload.complaintTitle}
+   Category: ${payload.category.toUpperCase()}
+   Priority: ${priorityLabel}
+   Filed By: ${payload.raisedBy}
+   Unit/Area: ${payload.unitId || "General"}
+
+📝 DESCRIPTION:
+${payload.complaintDescription
+  .split("\n")
+  .map((line) => `   ${line}`)
+  .join("\n")}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  SOCIETY-SPECIFIC: This complaint is visible ONLY to admins and 
+volunteers of ${payload.societyName}. No other societies can see this.
+
+🔐 CONFIDENTIAL: This email is sent to authorized staff members only.
+
+Please log into your dashboard to review and take action.
+Visit: https://societydesk.app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Powered by Sochi — Transparent Housing Society Management
+© 2026 Zephr. All rights reserved.
+`.trim();
+
     const body: Record<string, unknown> = {
       service_id:  SERVICE_ID,
       template_id: TEMPLATE_ID,
       user_id:     PUBLIC_KEY,
       template_params: {
         to_email:        email,
+        from_name:       "Sochi", // Sender name as "Sochi"
+        subject:         `[${priorityLabel}] ${payload.complaintTitle} — ${payload.societyName}`,
         society_name:    payload.societyName,
         complaint_title: payload.complaintTitle,
-        description:     payload.complaintDescription,
+        description:     emailBody, // Use formatted body
         priority:        priorityLabel,
         category:        payload.category,
         raised_by:       payload.raisedBy,
         unit_id:         payload.unitId ?? "General",
+        recipient_name:  recipientName,
       },
     };
 
@@ -75,9 +130,9 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
       .then(async (res) => {
         const text = await res.text();
         if (res.ok) {
-          console.log(`[Sochi Email] Sent to ${email} — ${res.status} ${text}`);
+          console.log(`[Sochi Email] ✓ Sent to ${email} (${recipientName})`);
         } else {
-          console.error(`[Sochi Email] Failed for ${email} — ${res.status}: ${text}`);
+          console.error(`[Sochi Email] ✗ Failed for ${email} — ${res.status}: ${text}`);
         }
       })
       .catch((err) => {
@@ -89,6 +144,9 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
   Promise.allSettled(sends).then((results) => {
     const ok  = results.filter((r) => r.status === "fulfilled").length;
     const err = results.filter((r) => r.status === "rejected").length;
-    console.log(`[Sochi Email] Done — ${ok} sent, ${err} failed of ${validEmails.length} staff`);
+    console.log(
+      `[Sochi Email] Batch complete — ${ok}/${validEmails.length} sent successfully` +
+      (err > 0 ? `, ${err} failed` : "")
+    );
   });
 }

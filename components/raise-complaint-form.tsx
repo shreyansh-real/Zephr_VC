@@ -167,9 +167,14 @@ export function RaiseComplaintForm({
             )
           );
           const staffEmails: string[] = [];
+          const recipientNames: Record<string, string> = {};
+          
           staffSnap.forEach((d) => {
             const m = d.data() as Member;
-            if (m.email) staffEmails.push(m.email);
+            if (m.email) {
+              staffEmails.push(m.email);
+              recipientNames[m.email] = m.name || "Staff Member";
+            }
           });
 
           // Fire-and-forget — don't await, never block submit
@@ -182,6 +187,7 @@ export function RaiseComplaintForm({
             raisedBy: currentMember?.name ?? user.email ?? "Resident",
             unitId: currentMember?.unitId ?? null,
             recipientEmails: staffEmails,
+            recipientNames, // Pass names for personalized greeting
           });
         } catch (emailErr) {
           // Never let email failure affect the complaint submission
