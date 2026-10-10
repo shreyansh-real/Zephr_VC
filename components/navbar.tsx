@@ -129,7 +129,7 @@ export function Navbar({
             {/* Brand & Society Switcher */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-md overflow-hidden border border-[var(--border-token)] shadow-sm shrink-0">
+                <div className="w-9 h-9 rounded-md overflow-hidden shrink-0">
                   <img src="/favicon.svg" alt="Sochi" className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-lg tracking-tight font-display hidden sm:inline-block">
