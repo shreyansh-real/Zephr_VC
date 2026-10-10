@@ -458,28 +458,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Leave Residence — sets member status to "removed" in current society,
-  // removes the societyId from the user's profile, then reloads.
+  // removes the societyId from the user's profile, clears sessionStorage, then signs out.
   const leaveResidence = async () => {
-    if (!user || !currentSocietyId) return;
-    const memberRef = doc(db, "societies", currentSocietyId, "members", user.uid);
-    const userRef = doc(db, "users", user.uid);
-    await runTransaction(db, async (tx) => {
-      const memSnap = await tx.get(memberRef);
-      if (memSnap.exists()) {
-        tx.update(memberRef, { status: "removed" });
-      }
-      const userSnap = await tx.get(userRef);
-      if (userSnap.exists()) {
-        const ids: string[] = (userSnap.data() as UserProfile).societyIds || [];
-        tx.update(userRef, {
-          societyIds: ids.filter((id) => id !== currentSocietyId),
-        });
-      }
-    });
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("societydesk_sid");
+    if (!user || !currentSocietyId) {
+      console.error("leaveResidence: user or currentSocietyId missing");
+      return;
     }
-    await loadUserData(user.uid);
+
+    try {
+      console.log(`[LeaveResidence] Starting for user ${user.uid} in society ${currentSocietyId}`);
+
+      const memberRef = doc(db, "societies", currentSocietyId, "members", user.uid);
+      const userRef = doc(db, "users", user.uid);
+
+      // Transaction: update member status to "removed" + remove societyId from user profile
+      await runTransaction(db, async (tx) => {
+        const memSnap = await tx.get(memberRef);
+        if (memSnap.exists()) {
+          console.log(`[LeaveResidence] Updating member status to 'removed'`);
+          tx.update(memberRef, { status: "removed" });
+        } else {
+          console.warn(`[LeaveResidence] Member doc does not exist`);
+        }
+
+        const userSnap = await tx.get(userRef);
+        if (userSnap.exists()) {
+          const ids: string[] = (userSnap.data() as UserProfile).societyIds || [];
+          const newIds = ids.filter((id) => id !== currentSocietyId);
+          console.log(`[LeaveResidence] Removing ${currentSocietyId} from societyIds: ${ids} → ${newIds}`);
+          tx.update(userRef, {
+            societyIds: newIds,
+          });
+        } else {
+          console.warn(`[LeaveResidence] User doc does not exist`);
+        }
+      });
+
+      console.log(`[LeaveResidence] Firestore transaction complete`);
+
+      // Clear local storage and session storage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("societydesk_sid");
+        sessionStorage.removeItem("sochi_welcomed");
+      }
+
+      console.log(`[LeaveResidence] Cleared storage, now signing out...`);
+
+      // Reload user data to reflect changes
+      await loadUserData(user.uid);
+    } catch (err) {
+      console.error("[LeaveResidence] Error:", err);
+      throw err;
+    }
   };
 
   const refreshProfile = async () => {
