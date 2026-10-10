@@ -23,6 +23,11 @@ import {
   runTransaction,
   serverTimestamp,
   writeBatch,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { type Member, type Society, type UserProfile, type UserRole } from "./types";
@@ -457,57 +462,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Leave Residence — sets member status to "removed" in current society,
-  // removes the societyId from the user's profile, clears sessionStorage, then signs out.
+  // Leave Residence — completely delete user data from Firestore to treat as new user
   const leaveResidence = async () => {
-    if (!user || !currentSocietyId) {
-      console.error("leaveResidence: user or currentSocietyId missing");
+    if (!user) {
+      console.error("[LeaveResidence] User not authenticated");
       return;
     }
 
     try {
-      console.log(`[LeaveResidence] Starting for user ${user.uid} in society ${currentSocietyId}`);
+      console.log(`[LeaveResidence] Starting complete user data deletion for ${user.uid}`);
 
-      const memberRef = doc(db, "societies", currentSocietyId, "members", user.uid);
       const userRef = doc(db, "users", user.uid);
 
-      // Transaction: update member status to "removed" + remove societyId from user profile
-      await runTransaction(db, async (tx) => {
-        const memSnap = await tx.get(memberRef);
-        if (memSnap.exists()) {
-          console.log(`[LeaveResidence] Updating member status to 'removed'`);
-          tx.update(memberRef, { status: "removed" });
-        } else {
-          console.warn(`[LeaveResidence] Member doc does not exist`);
+      // Get all societies this user is member of
+      console.log(`[LeaveResidence] Fetching all societies for user...`);
+      const userSnap = await getDoc(userRef);
+      const societyIds: string[] = userSnap.exists()
+        ? (userSnap.data() as UserProfile).societyIds || []
+        : [];
+
+      console.log(`[LeaveResidence] Found ${societyIds.length} societies: ${societyIds.join(", ")}`);
+
+      // Delete member document from all societies
+      for (const societyId of societyIds) {
+        try {
+          const memberRef = doc(db, "societies", societyId, "members", user.uid);
+          await deleteDoc(memberRef);
+          console.log(`[LeaveResidence] Deleted member from society ${societyId}`);
+        } catch (err) {
+          console.warn(`[LeaveResidence] Failed to delete member from ${societyId}:`, err);
         }
-
-        const userSnap = await tx.get(userRef);
-        if (userSnap.exists()) {
-          const ids: string[] = (userSnap.data() as UserProfile).societyIds || [];
-          const newIds = ids.filter((id) => id !== currentSocietyId);
-          console.log(`[LeaveResidence] Removing ${currentSocietyId} from societyIds: ${ids} → ${newIds}`);
-          tx.update(userRef, {
-            societyIds: newIds,
-          });
-        } else {
-          console.warn(`[LeaveResidence] User doc does not exist`);
-        }
-      });
-
-      console.log(`[LeaveResidence] Firestore transaction complete`);
-
-      // Clear local storage and session storage
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("societydesk_sid");
-        sessionStorage.removeItem("sochi_welcomed");
       }
 
-      console.log(`[LeaveResidence] Cleared storage, now signing out...`);
+      // Delete user profile document completely
+      console.log(`[LeaveResidence] Deleting user profile document...`);
+      await deleteDoc(userRef);
 
-      // Reload user data to reflect changes
-      await loadUserData(user.uid);
+      console.log(`[LeaveResidence] User profile deleted successfully`);
+
+      // Clear all local storage and session storage
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log(`[LeaveResidence] Cleared all storage`);
+      }
     } catch (err) {
-      console.error("[LeaveResidence] Error:", err);
+      console.error("[LeaveResidence] Error during data deletion:", err);
       throw err;
     }
   };
