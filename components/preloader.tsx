@@ -17,12 +17,12 @@ const WORDS = [
   { word: "Sochi",        lang: ""          },
 ];
 
-// Timing (ms) — smooth and generous, no rushing
-const IN_MS   = 320;  // word slides in — slower for smoothness
-const HOLD_MS = 380;  // word holds visible — longer to read comfortably
-const OUT_MS  = 280;  // word slides out
-const LAST_HOLD_MS = 650; // extra hold on "Sochi"
-const EXIT_MS = 500;  // full-screen fade-out — smooth exit
+// Timing (ms) — fast and snappy, preloader moves quick
+const IN_MS   = 180;  // word slides in — faster reveal
+const HOLD_MS = 150;  // word holds visible — brief pause
+const OUT_MS  = 140;  // word slides out — quick exit
+const LAST_HOLD_MS = 300; // extra hold on "Sochi"
+const EXIT_MS = 350;  // full-screen fade-out
 
 interface PreloaderProps {
   onComplete: () => void;
@@ -135,6 +135,13 @@ export function Preloader({ onComplete }: PreloaderProps) {
                 )}
               </AnimatePresence>
             </div>
+          </div>
+          {/* Footer branding */}
+          <div
+            className="absolute bottom-4 left-0 right-0 text-center text-[10px] font-bold tracking-wide"
+            style={{ color: "#5f5b51" }}
+          >
+            © 2026 Sochi. All rights reserved.
           </div>
         </motion.div>
       )}

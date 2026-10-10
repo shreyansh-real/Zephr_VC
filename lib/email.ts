@@ -5,7 +5,7 @@
  * staff members (admin + volunteer) of the SAME SOCIETY ONLY.
  *
  * Sender name: "Sochi"
- * Uses rich formatting for beautiful, clean emails
+ * Short, clear format
  * Free tier: 200 emails/month
  */
 
@@ -56,47 +56,23 @@ export async function sendHighPriorityAlert(payload: AlertPayload): Promise<void
     // Get recipient name if available
     const recipientName = payload.recipientNames?.[email] || "Staff Member";
 
-    // Create a beautifully formatted plain-text body with clear hierarchy
-    const emailBody = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🏠 SOCHI — Housing Society Management
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Short, clear email body
+    const emailBody = `Hi ${recipientName},
 
-Hello ${recipientName},
+A new ${priorityLabel} complaint needs your attention in ${payload.societyName}.
 
-A new ${priorityLabel} priority complaint has been filed in ${payload.societyName} that requires your immediate attention.
+Title: ${payload.complaintTitle}
+Category: ${payload.category}
+From: ${payload.raisedBy} (Unit: ${payload.unitId || "General"})
 
-╔════════════════════════════════════════════╗
-║  ${priorityLabel} PRIORITY COMPLAINT
-╚════════════════════════════════════════════╝
+Description:
+${payload.complaintDescription}
 
-📌 COMPLAINT DETAILS:
-   Title: ${payload.complaintTitle}
-   Category: ${payload.category.toUpperCase()}
-   Priority: ${priorityLabel}
-   Filed By: ${payload.raisedBy}
-   Unit/Area: ${payload.unitId || "General"}
+---
+Log in to your dashboard to review: https://societydesk.app
+This complaint is visible only to ${payload.societyName} staff.
 
-📝 DESCRIPTION:
-${payload.complaintDescription
-  .split("\n")
-  .map((line) => `   ${line}`)
-  .join("\n")}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚠️  SOCIETY-SPECIFIC: This complaint is visible ONLY to admins and 
-volunteers of ${payload.societyName}. No other societies can see this.
-
-🔐 CONFIDENTIAL: This email is sent to authorized staff members only.
-
-Please log into your dashboard to review and take action.
-Visit: https://societydesk.app
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Powered by Sochi — Transparent Housing Society Management
-© 2026 Zephr. All rights reserved.
-`.trim();
+© 2026 Sochi. All rights reserved.`;
 
     const body: Record<string, unknown> = {
       service_id:  SERVICE_ID,
@@ -104,11 +80,11 @@ Powered by Sochi — Transparent Housing Society Management
       user_id:     PUBLIC_KEY,
       template_params: {
         to_email:        email,
-        from_name:       "Sochi", // Sender name as "Sochi"
+        from_name:       "Sochi",
         subject:         `[${priorityLabel}] ${payload.complaintTitle} — ${payload.societyName}`,
         society_name:    payload.societyName,
         complaint_title: payload.complaintTitle,
-        description:     emailBody, // Use formatted body
+        description:     emailBody,
         priority:        priorityLabel,
         category:        payload.category,
         raised_by:       payload.raisedBy,

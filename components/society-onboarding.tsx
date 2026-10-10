@@ -22,7 +22,7 @@ export function SocietyOnboarding() {
   const { user, createSociety, joinSocietyByCode, pendingSociety, refreshProfile, signOut } = useAuth();
   const { t } = useLanguageStore();
 
-  const [mode, setMode] = useState<"select" | "create" | "join">("select");
+  const [mode, setMode] = useState<"select" | "create" | "join" | "processing">("select");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +103,7 @@ export function SocietyOnboarding() {
 
     setError(null);
     setLoading(true);
+    setMode("processing"); // Hide UI immediately after join starts
     try {
       await joinSocietyByCode({
         inviteCode: inviteCode.trim(),
@@ -114,6 +115,7 @@ export function SocietyOnboarding() {
       console.error("Join society error:", err);
       const message = err instanceof Error ? err.message : t.common.error;
       setError(message);
+      setMode("join"); // Go back to join form on error
     } finally {
       setLoading(false);
     }
@@ -176,6 +178,11 @@ export function SocietyOnboarding() {
         </div>
       </div>
     );
+  }
+
+  // Processing — joining society, show nothing so preloader can take over
+  if (mode === "processing") {
+    return null;
   }
 
   // Choose Create or Join
