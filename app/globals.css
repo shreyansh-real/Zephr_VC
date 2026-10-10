@@ -36,15 +36,15 @@
   --review:        #8a6a00;
 }
 
-/* ── Dark mode (warm charcoal base #1A1A18) ────────────────────────── */
+/* ── Dark mode (near-black, very dark) ────────────────────────── */
 .dark {
-  --bg:            #1A1A18;
-  --surface:       #252320;
-  --surface-2:     #302c27;
+  --bg:            #0A0A09;
+  --surface:       #141413;
+  --surface-2:     #1F1E1C;
   --ink:           #f2ede3;
-  --ink-inverse:   #1A1A18;
-  --muted:         #a8a292;
-  --border-token:  #3b372f;
+  --ink-inverse:   #0A0A09;
+  --muted:         #888378;
+  --border-token:  #2a2824;
   --border-strong: #f2ede3;
 
   --critical:      #ff5a48;
