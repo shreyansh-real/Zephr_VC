@@ -246,8 +246,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Main Workspace Content */}
-      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6">
+       {/* Main Workspace Content — Full Width */}
+       <div className="flex-1 w-full px-4 sm:px-8 lg:px-12">
         {selectedComplaintId ? (
           <ComplaintDetail
             complaintId={selectedComplaintId}
