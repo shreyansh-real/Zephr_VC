@@ -16,7 +16,7 @@ import { Preloader } from "@/components/preloader";
 import { Download, X } from "lucide-react";
 
 export default function HomePage() {
-  const { user, loading, currentSocietyId, currentMember } = useAuth();
+  const { user, loading, currentSocietyId, currentMember, profile, userSocieties, pendingSociety } = useAuth();
   const { t } = useLanguageStore();
 
   const [activeTab, setActiveTab] = useState<"complaints" | "raise" | "my" | "admin">("complaints");
@@ -189,8 +189,13 @@ export default function HomePage() {
     );
   }
 
+  // For EXISTING users (who have societyIds), skip onboarding completely.
+  // They should only see preloader + dashboard, never the "Join/New Society" screen.
+  const isExistingUser = profile && (profile.societyIds?.length ?? 0) > 0;
+
   // Authenticated but no approved active society selected: Show Onboarding / Pending screen
-  if (!currentSocietyId || currentMember?.status !== "active") {
+  // ONLY for new users who have no societies yet
+  if (!isExistingUser && (!currentSocietyId || currentMember?.status !== "active")) {
     return (
       <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
         <Navbar activeTab="complaints" onTabChange={() => {}} />
@@ -198,6 +203,27 @@ export default function HomePage() {
           <SocietyOnboarding />
         </div>
       </main>
+    );
+  }
+
+  // Existing user loading their societies: show preloader but NOT onboarding screen
+  if (isExistingUser && !currentSocietyId) {
+    return (
+      <>
+        {/* Show preloader while societies are loading */}
+        <AnimatePresence>
+          {showPreloader && (
+            <Preloader onComplete={() => setShowPreloader(false)} />
+          )}
+        </AnimatePresence>
+        <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
+          <Navbar activeTab="complaints" onTabChange={() => {}} />
+          <div className="flex-1 max-w-4xl mx-auto px-4 py-10 w-full flex items-center justify-center">
+            {/* Loading skeleton */}
+            <div className="text-[var(--muted)]">Loading your societies...</div>
+          </div>
+        </main>
+      </>
     );
   }
 
