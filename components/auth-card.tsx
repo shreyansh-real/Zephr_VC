@@ -47,7 +47,6 @@ export function AuthCard() {
       setConfirmationResult(confirmation);
       setStep("otp");
     } catch (err: unknown) {
-      console.error("Phone OTP error:", err);
       const message = err instanceof Error ? err.message : t.common.error;
       setError(message);
     } finally {
@@ -64,7 +63,6 @@ export function AuthCard() {
       setLoading(true);
       await verifyOtp(confirmationResult, otpCode.trim());
     } catch (err: unknown) {
-      console.error("OTP Verification error:", err);
       setError(t.auth.invalidOtp);
     } finally {
       setLoading(false);
@@ -77,7 +75,6 @@ export function AuthCard() {
       setLoading(true);
       await signInWithGoogle();
     } catch (err: unknown) {
-      console.error("Google sign in error:", err);
       const message = err instanceof Error ? err.message : t.common.error;
       setError(message);
     } finally {

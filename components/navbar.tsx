@@ -50,18 +50,14 @@ export function Navbar({
   const handleLeaveResidence = async () => {
     setLeaveLoading(true);
     try {
-      console.log("[HandleLeaveResidence] Starting leave residence process...");
       await leaveResidence();
-      console.log("[HandleLeaveResidence] Leave residence complete, now signing out...");
       await signOut();
-      console.log("[HandleLeaveResidence] Sign out complete");
     } catch (err) {
-      console.error("[HandleLeaveResidence] Error:", err);
       // Still try to sign out even if leave residence fails
       try {
         await signOut();
       } catch (signOutErr) {
-        console.error("[HandleLeaveResidence] Sign out also failed:", signOutErr);
+        // Silent fail
       }
     } finally {
       setLeaveLoading(false);
