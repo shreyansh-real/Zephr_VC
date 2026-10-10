@@ -163,9 +163,10 @@
   50%       { opacity: 0.5; }
 }
 
-.skeleton {
+.skeleton,
+.skeleton-pulse {
   background-color: var(--surface-2);
-  animation: skeleton-pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
   border-radius: 4px;
 }
 

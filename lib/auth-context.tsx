@@ -452,6 +452,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fbSignOut(auth);
     if (typeof window !== "undefined") {
       localStorage.removeItem("societydesk_sid");
+      // Clear preloader flag so the next sign-in shows the preloader again
+      sessionStorage.removeItem("sochi_welcomed");
     }
   };
 

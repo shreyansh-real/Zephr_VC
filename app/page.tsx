@@ -27,22 +27,29 @@ export default function HomePage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
-  // Preloader: show once per session on first sign-in (null → user transition)
+  // Preloader: show once per browser-session after an explicit sign-in/sign-up.
+  // sessionStorage flag "sochi_welcomed" prevents it firing again on reload.
   const [showPreloader, setShowPreloader] = useState(false);
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // undefined = not yet known (loading), null = logged out, string = logged in
+    if (loading) return; // wait until auth state is resolved
     const prev = prevUserRef.current;
     const curr = user?.uid ?? null;
 
-    // Trigger preloader when transitioning from logged-out → logged-in
+    // Only fire when transitioning null → uid AND the flag is not already set.
+    // On page reload while logged in: prev starts as undefined (not null) so
+    // the null→uid transition never fires — no preloader.
     if (prev === null && curr !== null) {
-      setShowPreloader(true);
+      const alreadyWelcomed = sessionStorage.getItem("sochi_welcomed");
+      if (!alreadyWelcomed) {
+        sessionStorage.setItem("sochi_welcomed", "1");
+        setShowPreloader(true);
+      }
     }
 
     prevUserRef.current = curr;
-  }, [user]);
+  }, [user, loading]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,14 +72,72 @@ export default function HomePage() {
     setDeferredPrompt(null);
   };
 
-  // Firebase auth initialising — brief blank screen with minimal indicator
+  // Firebase auth resolving — show skeleton that mirrors dashboard layout
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ background: "#1A1A18" }}>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:0ms]"   style={{ background: "#f5f0e8" }} />
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:150ms]" style={{ background: "#f5f0e8" }} />
-          <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:300ms]" style={{ background: "#f5f0e8" }} />
+      <main className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+        {/* Navbar skeleton */}
+        <div
+          className="w-full border-b px-4 sm:px-6 h-14 flex items-center justify-between shrink-0"
+          style={{ borderColor: "var(--border-token)", background: "var(--surface)" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg skeleton-pulse" />
+            <div className="w-20 h-4 rounded skeleton-pulse" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-24 h-7 rounded skeleton-pulse hidden sm:block" />
+            <div className="w-24 h-7 rounded skeleton-pulse hidden sm:block" />
+            <div className="w-7 h-7 rounded-full skeleton-pulse" />
+          </div>
+        </div>
+
+        {/* Tab row skeleton */}
+        <div
+          className="w-full border-b px-4 sm:px-6 h-10 flex items-center gap-4"
+          style={{ borderColor: "var(--border-token)", background: "var(--surface)" }}
+        >
+          <div className="w-20 h-3 rounded skeleton-pulse" />
+          <div className="w-16 h-3 rounded skeleton-pulse" />
+          <div className="w-20 h-3 rounded skeleton-pulse" />
+        </div>
+
+        {/* Two-column content skeleton */}
+        <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6">
+          {/* Left: notices sidebar */}
+          <div className="lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3">
+            <div className="w-28 h-3 rounded skeleton-pulse" />
+            <div
+              className="rounded-xl border p-4 flex flex-col gap-3"
+              style={{ borderColor: "var(--border-token)", background: "var(--surface)" }}
+            >
+              {[80, 65, 90].map((w, i) => (
+                <div key={i} className="flex flex-col gap-1.5">
+                  <div className="skeleton-pulse rounded h-3" style={{ width: `${w}%` }} />
+                  <div className="skeleton-pulse rounded h-2.5" style={{ width: "55%" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: complaint cards */}
+          <div className="flex-1 min-w-0 flex flex-col gap-3 pt-1">
+            <div className="w-32 h-3 rounded skeleton-pulse" />
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="rounded-xl border p-4 flex flex-col gap-2"
+                style={{ borderColor: "var(--border-token)", background: "var(--surface)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-12 h-5 rounded skeleton-pulse" />
+                  <div className="w-16 h-5 rounded skeleton-pulse" />
+                </div>
+                <div className="skeleton-pulse rounded h-4" style={{ width: "70%" }} />
+                <div className="skeleton-pulse rounded h-3" style={{ width: "40%" }} />
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     );
