@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   runTransaction,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
@@ -35,6 +36,9 @@ import {
   Globe,
   RotateCcw,
   Sparkles,
+  Trash2,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { generateAIReply } from "@/lib/ai-reply";
 
@@ -62,6 +66,8 @@ export function ComplaintDetail({
   const [updateMessage, setUpdateMessage] = useState("");
   const [newStatus, setNewStatus] = useState<ComplaintStatus>("open");
   const [selectedAssignee, setSelectedAssignee] = useState<string>("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isStaff = currentMember?.role === "admin" || currentMember?.role === "volunteer";
   const isCreator = user && complaint && complaint.createdBy === user.uid;
@@ -282,6 +288,40 @@ export function ComplaintDetail({
     }
   };
 
+  // Delete complaint (Creator only)
+  const handleDeleteComplaint = async () => {
+    if (!currentSocietyId || !complaintId || !isCreator) return;
+    setDeleting(true);
+    try {
+      // Delete all updates subcollection documents first
+      const updatesSnap = await getDocs(
+        collection(db, "societies", currentSocietyId, "complaints", complaintId, "updates")
+      );
+      for (const updateDoc of updatesSnap.docs) {
+        await deleteDoc(updateDoc.ref);
+      }
+
+      // Delete all upvotes subcollection documents
+      const upvotesSnap = await getDocs(
+        collection(db, "societies", currentSocietyId, "complaints", complaintId, "upvotes")
+      );
+      for (const upvoteDoc of upvotesSnap.docs) {
+        await deleteDoc(upvoteDoc.ref);
+      }
+
+      // Delete the complaint document itself
+      await deleteDoc(doc(db, "societies", currentSocietyId, "complaints", complaintId));
+
+      setDeleteModalOpen(false);
+      onBack(); // Go back to list after deletion
+      onStatusUpdated?.();
+    } catch (err) {
+      console.error("Delete complaint error:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading || !complaint) {
     return (
       <div className="py-20 text-center text-sm font-semibold text-[var(--muted)]">
@@ -400,7 +440,7 @@ export function ComplaintDetail({
               </div>
             )}
 
-            {/* Resident Reopen Button */}
+            {/* Resident Reopen Button + Delete Button */}
             {isCreator && (complaint.status === "resolved" || complaint.status === "closed") && (
               <div className="p-4 rounded-md bg-[var(--surface-2)] border border-[var(--border-token)] flex items-center justify-between gap-4 mb-6">
                 <div className="text-xs text-[var(--muted)]">
@@ -415,6 +455,18 @@ export function ComplaintDetail({
                   <span>Reopen Issue</span>
                 </button>
               </div>
+            )}
+
+            {/* Delete Button (Creator only, always visible) */}
+            {isCreator && (
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(true)}
+                className="h-9 px-3.5 rounded-md border border-[#d62f1f] bg-[#fbe3df] text-[#d62f1f] text-xs font-bold flex items-center gap-1.5 min-h-[44px] hover:bg-[#f8d5d0] transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Complaint</span>
+              </button>
             )}
           </div>
         </div>
@@ -559,6 +611,56 @@ export function ComplaintDetail({
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm mx-4 bg-[var(--surface)] border border-[var(--border-token)] rounded-lg shadow-lg p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#fbe3df] flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-[#d62f1f]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-[var(--ink)] text-base">Delete Complaint?</h3>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  This action cannot be undone. The complaint and all updates will be permanently deleted.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                className="p-1 text-[var(--muted)] hover:text-[var(--ink)] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleting}
+                className="h-9 px-4 rounded-md border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-[var(--ink)] text-xs font-bold disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteComplaint}
+                disabled={deleting}
+                className="h-9 px-4 rounded-md bg-[#d62f1f] text-white text-xs font-bold flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
