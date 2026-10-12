@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguageStore } from "@/lib/language-store";
 import { Navbar } from "@/components/navbar";
+import { LandingNavbar } from "@/components/landing-navbar";
 import { AuthCard } from "@/components/auth-card";
 import { SocietyOnboarding } from "@/components/society-onboarding";
 import { ComplaintsList } from "@/components/complaints-list";
@@ -143,10 +144,12 @@ export default function HomePage() {
     );
   }
 
-  // Unauthenticated: Show Landing with text → form → text sandwich
+  // Unauthenticated: Show Landing with navbar (Logo + Language + Theme) and text → form → text sandwich
   if (!user) {
     return (
       <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
+        <LandingNavbar />
+
         {/* Top Text Section */}
         <div className="w-full px-4 sm:px-6 py-12 sm:py-16">
           <div className="max-w-2xl mx-auto text-center space-y-4">
