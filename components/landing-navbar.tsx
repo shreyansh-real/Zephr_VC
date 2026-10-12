@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { useLanguageStore } from "@/lib/language-store";
 import { type Language } from "@/lib/i18n";
 import { useTheme } from "next-themes";
@@ -22,16 +21,11 @@ export function LandingNavbar() {
   return (
     <nav className="w-full border-b border-[var(--border-token)] bg-[var(--bg)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-        {/* Logo */}
+        {/* Logo - Same as desktop navbar */}
         <div className="flex items-center">
-          <Image
-            src="/sochi-logo.png"
-            alt="Sochi Logo"
-            width={45}
-            height={45}
-            className="w-11 h-11"
-            priority
-          />
+          <div className="w-9 h-9 rounded-md overflow-hidden shrink-0">
+            <img src="/favicon.svg" alt="Sochi" className="w-full h-full object-cover" />
+          </div>
         </div>
 
         {/* Right Side: Language & Theme */}
