@@ -417,13 +417,13 @@ export function ComplaintDetail({
               {complaint.description}
             </div>
 
-            {/* Attached Photos */}
-            {complaint.photos && complaint.photos.length > 0 && (
-              <div className="mb-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-                  Attached Photos ({complaint.photos.length})
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+             {/* Attached Photos */}
+             {complaint.photos && complaint.photos.length > 0 && (
+               <div className="mb-6">
+                 <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+                   Attached Photos ({complaint.photos.length})
+                 </p>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {complaint.photos.map((url, i) => (
                     <a
                       key={i}
@@ -612,10 +612,10 @@ export function ComplaintDetail({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-sm mx-4 bg-[var(--surface)] border border-[var(--border-token)] rounded-lg shadow-lg p-6 space-y-4">
+       {/* Delete Confirmation Modal */}
+       {deleteModalOpen && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+           <div className="w-full max-w-sm mx-2 sm:mx-4 bg-[var(--surface)] border border-[var(--border-token)] rounded-lg shadow-lg p-6 space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-[#fbe3df] flex items-center justify-center shrink-0">
                 <AlertCircle className="w-5 h-5 text-[#d62f1f]" />

@@ -243,23 +243,23 @@ export default function HomePage() {
         setSelectedComplaintId(null);
       }} />
 
-      {/* PWA Install Banner */}
-      {showInstallBanner && (
-        <div className="bg-[var(--surface-2)] border-b border-[var(--border-token)] px-4 py-2.5 text-sm flex items-center justify-between">
+       {/* PWA Install Banner */}
+       {showInstallBanner && (
+         <div className="bg-[var(--surface-2)] border-b border-[var(--border-token)] px-4 py-2.5 text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <Download className="w-4 h-4 text-[var(--ink)]" />
             <span className="font-semibold text-xs text-[var(--ink)]">
               Install SocietyDesk on your home screen for quick offline access
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleInstallApp}
-              className="h-8 px-3 rounded bg-[var(--ink)] text-[var(--ink-inverse)] text-xs font-bold"
-            >
-              Install
-            </button>
+           <div className="flex items-center gap-2">
+             <button
+               type="button"
+               onClick={handleInstallApp}
+               className="h-11 min-h-[44px] px-3 rounded bg-[var(--ink)] text-[var(--ink-inverse)] text-xs font-bold"
+             >
+               Install
+             </button>
             <button
               type="button"
               onClick={() => setShowInstallBanner(false)}

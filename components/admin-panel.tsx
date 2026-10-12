@@ -503,13 +503,13 @@ export function AdminPanel() {
 
               {/* Admin Role Modification */}
               {isAdmin && id !== currentMember?.phone && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   {member.role !== "admin" && (
                     <button
                       type="button"
                       disabled={actionLoading === id}
                       onClick={() => handleChangeRole(id, "admin")}
-                      className="h-9 px-2.5 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px]"
+                      className="px-3 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px] h-11"
                     >
                       {t.admin.makeAdmin}
                     </button>
@@ -519,7 +519,7 @@ export function AdminPanel() {
                       type="button"
                       disabled={actionLoading === id}
                       onClick={() => handleChangeRole(id, "volunteer")}
-                      className="h-9 px-2.5 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px]"
+                      className="px-3 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px] h-11"
                     >
                       {t.admin.makeVolunteer}
                     </button>
@@ -529,7 +529,7 @@ export function AdminPanel() {
                       type="button"
                       disabled={actionLoading === id}
                       onClick={() => handleChangeRole(id, "resident")}
-                      className="h-9 px-2.5 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px]"
+                      className="px-3 rounded border border-[var(--border-token)] hover:border-[var(--border-strong)] text-xs font-bold text-[var(--ink)] min-h-[44px] h-11"
                     >
                       {t.admin.makeResident}
                     </button>
@@ -538,7 +538,7 @@ export function AdminPanel() {
                     type="button"
                     disabled={actionLoading === id}
                     onClick={() => handleReject(id)}
-                    className="h-9 px-2.5 rounded border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-xs font-bold text-[var(--critical)] min-h-[44px]"
+                    className="px-3 rounded border border-[var(--border-token)] hover:bg-[var(--surface-2)] text-xs font-bold text-[var(--critical)] min-h-[44px] h-11"
                   >
                     {t.admin.removeMember}
                   </button>
@@ -611,15 +611,15 @@ export function AdminPanel() {
           </form>
 
           {/* Units list */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {units.map(({ id, unit }) => (
               <div
                 key={id}
-                className="p-3 bg-[var(--surface)] border border-[var(--border-token)] rounded-md text-sm flex flex-col gap-2"
+                className="p-4 bg-[var(--surface)] border border-[var(--border-token)] rounded-md text-sm flex flex-col gap-2"
               >
                 <div>
-                  <p className="font-bold text-[var(--ink)]">{unit.label}</p>
-                  <p className="text-xs text-[var(--muted)]">
+                  <p className="font-bold text-[var(--ink)] truncate">{unit.label}</p>
+                  <p className="text-xs text-[var(--muted)] truncate">
                     {unit.group} • {unit.type}
                   </p>
                 </div>
@@ -627,10 +627,10 @@ export function AdminPanel() {
                   type="button"
                   disabled={actionLoading === "unit-" + id}
                   onClick={() => handleRemoveUnit(id)}
-                  className="mt-auto flex items-center gap-1 text-[10px] font-bold text-[var(--critical)] hover:opacity-80 disabled:opacity-40"
+                  className="mt-auto h-9 px-2.5 rounded border border-[var(--border-token)] text-xs font-bold text-[var(--critical)] hover:opacity-80 disabled:opacity-40 flex items-center gap-1 min-h-[44px]"
                 >
                   <Trash2 className="w-3 h-3" />
-                  Remove
+                  <span className="hidden sm:inline">Remove</span>
                 </button>
               </div>
             ))}
@@ -661,8 +661,8 @@ export function AdminPanel() {
               <label className="block text-xs font-bold text-[var(--muted)] mb-1">
                 Body
               </label>
-              {/* Rich-text toolbar */}
-              <div className="flex items-center gap-0.5 p-1 mb-1 bg-[var(--surface-2)] border border-[var(--border-token)] rounded-t-md">
+               {/* Rich-text toolbar */}
+               <div className="flex flex-wrap items-center gap-0.5 p-1 mb-1 bg-[var(--surface-2)] border border-[var(--border-token)] rounded-t-md">
                 <button
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); document.execCommand("bold"); }}
@@ -705,14 +705,14 @@ export function AdminPanel() {
                   </button>
                 ))}
               </div>
-              {/* Editable area */}
-              <div
-                ref={editorRef}
-                contentEditable
-                suppressContentEditableWarning
-                data-placeholder="Write the notice content here…"
-                className="min-h-[100px] px-3 py-2 rounded-b-md border border-t-0 border-[var(--border-token)] bg-[var(--surface)] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] notice-editor empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--muted)] empty:before:pointer-events-none"
-              />
+               {/* Editable area */}
+               <div
+                 ref={editorRef}
+                 contentEditable
+                 suppressContentEditableWarning
+                 data-placeholder="Write the notice content here…"
+                 className="min-h-[100px] max-h-[200px] sm:max-h-[300px] overflow-y-auto px-3 py-2 rounded-b-md border border-t-0 border-[var(--border-token)] bg-[var(--surface)] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--border-strong)] notice-editor empty:before:content-[attr(data-placeholder)] empty:before:text-[var(--muted)] empty:before:pointer-events-none"
+               />
             </div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input

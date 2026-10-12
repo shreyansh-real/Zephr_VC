@@ -326,8 +326,8 @@ export function ComplaintsList({
           />
         </div>
 
-        {/* Filter Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+           {/* Filter Dropdowns */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
           {/* Status Filter */}
           <div>
             <label className="block text-[11px] font-bold uppercase text-[var(--muted)] mb-1">

@@ -280,11 +280,11 @@ export function RaiseComplaintForm({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-[var(--ink)] mb-1">
-              {t.complaints.priority} *
-            </label>
-            <div className="grid grid-cols-4 gap-1.5 h-11">
+           <div>
+             <label className="block text-sm font-bold text-[var(--ink)] mb-1">
+               {t.complaints.priority} *
+             </label>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 h-11">
               {(["low", "medium", "high", "critical"] as ComplaintPriority[]).map((p) => (
                 <button
                   key={p}
@@ -373,9 +373,9 @@ export function RaiseComplaintForm({
             </span>
           </div>
 
-          {/* Previews */}
-          {filePreviews.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mb-3">
+           {/* Previews */}
+           {filePreviews.length > 0 && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
               {filePreviews.map((src, i) => (
                 <div
                   key={i}
