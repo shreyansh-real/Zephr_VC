@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useLanguageStore } from "@/lib/language-store";
 import { type Language } from "@/lib/i18n";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Building2, Globe, ChevronDown } from "lucide-react";
+import { Sun, Moon, Globe, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LANGUAGES: { code: Language; name: string }[] = [
@@ -20,11 +21,17 @@ export function LandingNavbar() {
 
   return (
     <nav className="w-full border-b border-[var(--border-token)] bg-[var(--bg)]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <Building2 className="w-6 h-6 text-[var(--accent)]" />
-          <span className="text-lg font-black text-[var(--ink)]">Sochi</span>
+        <div className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="Sochi Logo"
+            width={40}
+            height={40}
+            className="w-10 h-10"
+            priority
+          />
         </div>
 
         {/* Right Side: Language & Theme */}
@@ -87,3 +94,4 @@ export function LandingNavbar() {
     </nav>
   );
 }
+
