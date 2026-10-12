@@ -151,9 +151,15 @@ export interface Translations {
     resolved: string;
     closed: string;
   };
-  roles: {
+   roles: {
     resident: string;
     volunteer: string;
+    admin: string;
+  };
+  tabs: {
+    noticeboard: string;
+    myIssues: string;
+    raiseIssue: string;
     admin: string;
   };
   admin: {
@@ -337,6 +343,12 @@ export const translations: Record<Language, Translations> = {
       volunteer: "Volunteer",
       admin: "Admin",
     },
+    tabs: {
+      noticeboard: "Public Noticeboard",
+      myIssues: "My Issues",
+      raiseIssue: "Raise Issue",
+      admin: "Admin",
+    },
     admin: {
       title: "Society Administration",
       membersTab: "Members Directory",
@@ -516,6 +528,12 @@ export const translations: Record<Language, Translations> = {
       volunteer: "कार्यकर्ता",
       admin: "व्यवस्थापक (Admin)",
     },
+    tabs: {
+      noticeboard: "सार्वजनिक नोटिसबोर्ड",
+      myIssues: "मेकी शिकायतें",
+      raiseIssue: "नई शिकायत दर्ज करें",
+      admin: "प्रबंधन",
+    },
     admin: {
       title: "सोसाइटी प्रबंधन",
       membersTab: "सदस्य सूची",
@@ -694,6 +712,12 @@ export const translations: Record<Language, Translations> = {
       resident: "रहिवासी",
       volunteer: "स्वयंसेवक",
       admin: "व्यवस्थापक (Admin)",
+    },
+    tabs: {
+      noticeboard: "सार्वजनिक नोटिसबोर्ड",
+      myIssues: "माझ्या तक्रारी",
+      raiseIssue: "नई तक्रार दाखल करा",
+      admin: "व्यवस्थापन",
     },
     admin: {
       title: "सोसायटी प्रशासन",
