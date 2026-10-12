@@ -25,11 +25,11 @@ export function LandingNavbar() {
         {/* Logo */}
         <div className="flex items-center">
           <Image
-            src="/logo.png"
+            src="/sochi-logo.png"
             alt="Sochi Logo"
-            width={40}
-            height={40}
-            className="w-10 h-10"
+            width={45}
+            height={45}
+            className="w-11 h-11"
             priority
           />
         </div>
