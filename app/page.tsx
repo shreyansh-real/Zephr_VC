@@ -144,46 +144,88 @@ export default function HomePage() {
     );
   }
 
-  // Unauthenticated: Show Landing with navbar (Logo + Language + Theme) and text → form → text sandwich
+  // Unauthenticated: Show Landing with navbar and responsive layout
   if (!user) {
     return (
       <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col">
         <LandingNavbar />
 
-        {/* Top Text Section */}
-        <div className="w-full px-4 sm:px-6 py-12 sm:py-16">
-          <div className="max-w-2xl mx-auto text-center space-y-4">
-            <h1 className="text-4xl sm:text-5xl font-black font-display tracking-tight text-[var(--ink)] leading-[1.2]">
-              Transparent Housing Society Management
-            </h1>
-            <p className="text-base sm:text-lg text-[var(--muted)] leading-relaxed">
-              A simple, secure platform for residents and administrators to manage complaints, track issues, and resolve problems together.
-            </p>
+        {/* Mobile: Text → Form → Text Sandwich */}
+        <div className="lg:hidden w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col">
+          {/* Top Text Section - Mobile Only */}
+          <div className="w-full mb-8">
+            <div className="max-w-2xl mx-auto text-center space-y-4">
+              <h1 className="text-4xl sm:text-5xl font-black font-display tracking-tight text-[var(--ink)] leading-[1.2]">
+                Transparent Housing Society Management
+              </h1>
+              <p className="text-base sm:text-lg text-[var(--muted)] leading-relaxed">
+                A simple, secure platform for residents and administrators to manage complaints, track issues, and resolve problems together.
+              </p>
+            </div>
+          </div>
+
+          {/* Form Section - Mobile */}
+          <div className="w-full flex items-center justify-center mb-8">
+            <div className="w-full max-w-md">
+              <AuthCard />
+            </div>
+          </div>
+
+          {/* Bottom Text Section - Mobile Only */}
+          <div className="w-full">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
+                  <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
+                  <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
+                  <p className="text-sm text-[var(--muted)]">Install as an app and use it anytime, anywhere, even without internet.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Form Section */}
-        <div className="w-full flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
-          <div className="w-full max-w-md">
-            <AuthCard />
-          </div>
-        </div>
+        {/* Desktop: Single Frame with Text Left, Form Right */}
+        <div className="hidden lg:flex flex-1 items-center justify-center px-6 py-16">
+          <div className="max-w-5xl w-full grid grid-cols-2 gap-12 items-center">
+            {/* Left: Text Content */}
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h1 className="text-5xl font-black font-display tracking-tight text-[var(--ink)] leading-[1.2]">
+                  Transparent Housing Society Management
+                </h1>
+                <p className="text-lg text-[var(--muted)] leading-relaxed">
+                  A simple, secure platform for residents and administrators to manage complaints, track issues, and resolve problems together.
+                </p>
+              </div>
 
-        {/* Bottom Text Section */}
-        <div className="w-full px-4 sm:px-6 py-12 sm:py-16">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
-                <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
+                  <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
+                  <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
+                  <p className="text-sm text-[var(--muted)]">Install as an app and use it anytime, anywhere, even without internet.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
-                <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
-                <p className="text-sm text-[var(--muted)]">Install as an app and use it anytime, anywhere, even without internet.</p>
+            </div>
+
+            {/* Right: Form */}
+            <div className="flex items-center justify-center">
+              <div className="w-full max-w-md">
+                <AuthCard />
               </div>
             </div>
           </div>
