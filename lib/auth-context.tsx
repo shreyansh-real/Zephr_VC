@@ -325,7 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) throw new Error("Authentication required");
 
     const code = generateInviteCode(8);
-    const sid = doc(db, "societies", "_").id; // generate unique id
+    const sid = doc(collection(db, "societies")).id; // generate unique id
 
     await runTransaction(db, async (tx) => {
       const socRef = doc(db, "societies", sid);
@@ -381,7 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       for (const group of params.unitGroups) {
         const trimmed = group.trim();
         if (!trimmed) continue;
-        const uRef = doc(db, "societies", sid, "units", doc(db, "societies", sid, "units", "_").id);
+        const uRef = doc(collection(db, "societies", sid, "units"));
         batch.set(uRef, {
           label: trimmed,
           group: trimmed,
