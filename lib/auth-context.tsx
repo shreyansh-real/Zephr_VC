@@ -252,26 +252,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   // Google Sign-In
-  // Uses popup on localhost (redirect fails silently on non-hosted origins),
-  // uses redirect on production (Firebase Hosting / Vercel).
+  // Uses popup on all environments for consistent behavior
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
-    const isLocalhost =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1");
-
-    if (isLocalhost) {
-      // Popup works reliably on localhost
+    try {
+      // Use popup on all environments (localhost, Vercel, Firebase Hosting)
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         await loadUserData(result.user.uid);
       }
-    } else {
-      // Redirect works reliably on production (Firebase Hosting)
-      await signInWithRedirect(auth, provider);
+    } catch (error: any) {
+      // If popup is blocked, fall back to redirect
+      if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          console.error("Google Sign-In Error:", redirectError);
+          throw redirectError;
+        }
+      } else {
+        throw error;
+      }
     }
   };
 
