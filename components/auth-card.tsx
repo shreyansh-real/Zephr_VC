@@ -98,12 +98,12 @@ export function AuthCard() {
               Coming Soon
             </span>
           </div>
-          <input
-            type="tel"
-            placeholder="+91 98765 43210"
-            disabled
-            className="w-full h-12 px-3.5 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-[var(--muted)] text-base font-medium placeholder:text-[var(--muted)] opacity-50 cursor-not-allowed"
-          />
+           <input
+             type="tel"
+             placeholder="+91 98765 *****"
+             disabled
+             className="w-full h-12 px-3.5 rounded-md border border-[var(--border-token)] bg-[var(--surface-2)] text-[var(--muted)] text-base font-medium placeholder:text-[var(--muted)] opacity-50 cursor-not-allowed"
+           />
           <p className="text-xs text-[var(--muted)] mt-1.5">
             Phone verification will be available soon for SMS-based authentication
           </p>
