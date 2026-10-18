@@ -171,25 +171,25 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Bottom Text Section - Mobile Only */}
-          <div className="w-full">
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
-                  <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
-                  <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
-                  <p className="text-sm text-[var(--muted)]">Install as an app and use it anytime, anywhere, even without internet.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+           {/* Bottom Text Section - Mobile Only */}
+           <div className="w-full">
+             <div className="max-w-2xl mx-auto space-y-6">
+               <div className="space-y-4">
+                 <div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
+                   <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
+                   <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
+                   <p className="text-sm text-[var(--muted)]">Access cached data instantly. Install as an app for seamless offline viewing of past complaints and updates.</p>
+                 </div>
+               </div>
+             </div>
+           </div>
         </div>
 
         {/* Desktop: Single Frame with Text Left, Form Right */}
@@ -208,19 +208,19 @@ export default function HomePage() {
 
               <div className="space-y-4 pt-4">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
-                  <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
-                  <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
-                  <p className="text-sm text-[var(--muted)]">Install as an app and use it anytime, anywhere, even without internet.</p>
-                </div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Secure & Private</p>
+                   <p className="text-sm text-[var(--muted)]">Your data is isolated. Each society is completely secure and independent.</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Multi-Language Support</p>
+                   <p className="text-sm text-[var(--muted)]">Available in English, Hindi, and Marathi for better accessibility.</p>
+                 </div>
+                 <div>
+                   <p className="text-sm font-semibold text-[var(--ink)] mb-1">Works Offline</p>
+                   <p className="text-sm text-[var(--muted)]">Access cached data instantly. Install as an app for seamless offline viewing of past complaints and updates.</p>
+                 </div>
+               </div>
               </div>
-            </div>
 
             {/* Right: Form */}
             <div className="flex items-center justify-center">
